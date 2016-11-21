@@ -22,8 +22,6 @@ public class StandingsCreationHelper
 
 	private static StandingsFile resultsJExcelFile;
 
-	private static boolean isFinished = false;
-
 	public enum Category {
 		BENJAMIN("Benjamin"), CADET("Cadet"), JUVÉNILE("Juvénile");
 
@@ -170,8 +168,6 @@ public class StandingsCreationHelper
 		{
 			System.out.println(ex.getClass().getName() + ": " + ex.getMessage());
 		}
-
-		isFinished = true;
 	}
 
 	/**
@@ -197,14 +193,9 @@ public class StandingsCreationHelper
 		return standingsFile;
 	}
 
-	public static boolean isFinished()
-	{
-		return isFinished;
-	}
-
 	public static void main(String[] args) throws Exception
 	{
-		resultsFile = new File("C:\\Benoit\\Work\\Java\\Badminton\\RésultatsTournoi.xls");
+		resultsFile = new File("C:\\Benoit\\Work\\Java\\Badminton\\RésultatsTournoi_Test.xls");
 		standingsFile = new File("C:\\Benoit\\Work\\Java\\Badminton\\Résultats.xls");
 		createStandingsFile();
 	}

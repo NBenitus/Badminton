@@ -129,51 +129,19 @@ public class PostgreSQLJDBC
 				// Add a result entry (name, schoolName, score) for each tournament
 				for (int j = 1; j <= TeamResultSheet.NUMBEROFTOURNAMENTS; j++)
 				{
-					// Check if the result exists already in the database
-					PreparedStatement stm = connection.prepareStatement(
-							"SELECT PlayerName_fkey FROM Result WHERE PlayerName_fkey=? AND Category=? AND TournamentNumber=? "
-							+ "AND TypeOfPlay=?");
-					stm.setString(1, listResults.get(i).getName());
-					stm.setString(2, listResults.get(i).getCategory());
-					stm.setInt(3, j);
-					stm.setString(4, listResults.get(i).getTypeOfPlay().text());
-
-					ResultSet resultSet = stm.executeQuery();
-
-					// If no matching result, add it to the database
-					if (!resultSet.next())
+					// No result added for the Demi-Joueur entry, only used in the previous template
+					if (!listResults.get(i).getName().equals("DEMI-JOUEUR"))
 					{
-						// No result added for the Demi-Joueur entry, only used in the previous template
-						if (!listResults.get(i).getName().equals("DEMI-JOUEUR"))
-						{
-							stm = connection.prepareStatement(
-									"INSERT INTO Result (PlayerName_fkey, SchoolName_fkey, category, TypeOfPlay, "
-											+ "TournamentNumber, Score) VALUES(?,?,?,?,?,?);");
+						PreparedStatement stm = connection.prepareStatement(
+								"INSERT INTO Result (PlayerName_fkey, SchoolName_fkey, category, TypeOfPlay, "
+										+ "TournamentNumber, Score) VALUES(?,?,?,?,?,?);");
 
-							stm.setString(1, listResults.get(i).getName());
-							stm.setString(2, listResults.get(i).getSchoolName());
-							stm.setString(3, listResults.get(i).getCategory());
-							stm.setString(4, listResults.get(i).getTypeOfPlay().text());
-							stm.setInt(5, j);
-							stm.setInt(6, listResults.get(i).getScores().get(j - 1));
-
-							stm.executeUpdate();
-						}
-					}
-
-					// If there is already a matching result, update it with the new value
-					else
-					{
-						stm = connection.prepareStatement(
-								"UPDATE Result SET score=? WHERE PlayerName_fkey=? AND SchoolName_fkey=? "
-										+ "AND Category=? AND TypeOfPlay=? AND TournamentNumber=?;");
-
-						stm.setInt(1, listResults.get(i).getScores().get(j - 1));
-						stm.setString(2, listResults.get(i).getName());
-						stm.setString(3, listResults.get(i).getSchoolName());
-						stm.setString(4, listResults.get(i).getCategory());
-						stm.setString(5, listResults.get(i).getTypeOfPlay().text());
-						stm.setInt(6, j);
+						stm.setString(1, listResults.get(i).getName());
+						stm.setString(2, listResults.get(i).getSchoolName());
+						stm.setString(3, listResults.get(i).getCategory());
+						stm.setString(4, listResults.get(i).getTypeOfPlay().text());
+						stm.setInt(5, j);
+						stm.setInt(6, listResults.get(i).getScores().get(j - 1));
 
 						stm.executeUpdate();
 					}
@@ -196,9 +164,9 @@ public class PostgreSQLJDBC
 		PreparedStatement stm;
 		try
 		{
-//			stm = connection.prepareStatement("DELETE FROM Result; DELETE FROM Player;");
-			stm = connection.prepareStatement("DELETE FROM Result;");
-			stm.executeUpdate();
+			stm = connection.prepareStatement("DELETE FROM Result; DELETE FROM Player;");
+			stm.execute();
+
 			stm.close();
 		}
 		catch (SQLException e)
@@ -292,17 +260,15 @@ public class PostgreSQLJDBC
 			{
 				PreparedStatement stm = connection.prepareStatement(
 						"SELECT ttotal.PlayerName_fkey, SchoolName_fkey, SumScores, RANK() over (order by SumScores desc) AS OverallRank "
-								+ "FROM ( "
-								+ "SELECT PlayerName_fkey, sum(coalesce(t1.Score, 0)) AS SumScores "
-								+ "FROM (" + "SELECT PlayerName_fkey, score, "
-								+ "rank() over (PARTITION BY PlayerName_fkey order by Score desc) AS ScoreRank "
-								+ "FROM Result LEFT JOIN Player ON Player.name=Result.PlayerName_fkey "
-								+ "WHERE Category=? AND Gender=? AND TypeOfPlay=?) t1 "
+						+ "FROM ( "
+								+ "SELECT PlayerName_fkey, sum(coalesce(tBestIndividualScores.Score, 0)) AS SumScores "
+								+ "FROM ("
+									+ individualResultsBestScores()
 								+ "WHERE ScoreRank <= 4 GROUP BY PlayerName_fkey "
 								+ "ORDER BY SumScores DESC) ttotal "
-								+ "LEFT JOIN ( "
+						+ "LEFT JOIN ( "
 								+ individualResultsGetSchool(typeOfPlay)
-								+ "ON ttotal.PlayerName_fkey=tschool2.PlayerName_fkey");
+						+ "ON ttotal.PlayerName_fkey=tschool2.PlayerName_fkey");
 
 				stm.setString(1, typeOfResult.category().text());
 				stm.setString(2, typeOfResult.gender().text());
@@ -315,24 +281,24 @@ public class PostgreSQLJDBC
 			{
 				PreparedStatement stm = connection.prepareStatement(
 						"SELECT t2.PlayerName_fkey, SchoolName_fkey, SumScores, RANK() over (order by SumScores desc) AS OverallRank "
-								+ "FROM ( "
+						+ "FROM ( "
 								+ "SELECT PlayerName_fkey, ScoreSimple, sum(ScoreSimple) over "
-								+ "(partition by PlayerName_fkey) as SumScores " + "FROM ( "
+								+ "(partition by PlayerName_fkey) as SumScores "
+								+ "FROM ( "
+									+ "SELECT PlayerName_fkey, score, ScoreRank, SUM(score) as ScoreSimple "
+									+ "FROM ( "
+										+ individualResultsBestScores() //+ ") trank "
+								+ "WHERE ScoreRank <= 4 "
+								+ "GROUP BY PlayerName_fkey, score, ScoreRank "
+
+								+"UNION ALL "
+
 								+ "SELECT PlayerName_fkey, score, ScoreRank, SUM(score) as ScoreSimple "
-								+ "FROM ( " + "SELECT PlayerName_fkey, score, rank() "
-								+ "over (PARTITION BY PlayerName_fkey order by Score desc) AS ScoreRank "
-								+ "FROM Result LEFT JOIN Player on Player.name=Result.PlayerName_fkey "
-								+ "WHERE Category=? AND Gender=? AND TypeOfPlay=?) trank " + "WHERE ScoreRank <= 4 "
-								+ "GROUP BY PlayerName_fkey, score, ScoreRank " +
-
-								"UNION ALL " +
-
-								"SELECT PlayerName_fkey, score, ScoreRank, SUM(score) as ScoreSimple "
-								+ "FROM ( " + "SELECT PlayerName_fkey, score, rank() "
-								+ "over (PARTITION BY PlayerName_fkey order by Score desc) AS ScoreRank "
-								+ "FROM Result LEFT JOIN Player on Player.name=Result.PlayerName_fkey "
-								+ "WHERE Category=? AND Gender=? AND TypeOfPlay=?) trank " + "WHERE ScoreRank <= 4 "
+								+ "FROM ( "
+									+ individualResultsBestScores() //+ ") trank "
+								+ "WHERE ScoreRank <= 4 "
 								+ "GROUP BY PlayerName_fkey, score, ScoreRank ) t1) t2 "
+
 								+ "LEFT JOIN ( "
 								+ individualResultsGetSchool(TypeOfPlay.SIMPLE)
 								+ "ON t2.PlayerName_fkey=tschool2.PlayerName_fkey "
@@ -474,6 +440,27 @@ public class PostgreSQLJDBC
 		return teamsResults;
 	}
 
+	/**
+	 * SQL query that returns the list of players and their best tournament scores
+	 *
+	 * @return list of players and their best tournament scores
+	 */
+	public static String individualResultsBestScores()
+	{
+		return "SELECT PlayerName_fkey, score, tournamentNumber, rank() "
+				+ "over (PARTITION BY PlayerName_fkey order by Score desc) AS ScoreRank "
+				+ "FROM ( "
+					+ "SELECT PlayerName_fkey, score, TournamentNumber "
+						+ "FROM Result LEFT JOIN Player ON Player.name=Result.PlayerName_fkey "
+						+ "WHERE Category=? AND Gender=? AND TypeOfPlay=? AND score > 0 ) tBestIndividualScoresWithDuplicates "
+					+ "GROUP BY PlayerName_fkey, score, tournamentNumber) tBestIndividualScores ";
+	}
+
+	/**
+	 * SQL query that returns a list of players and their most recent school
+	 *
+	 * @return list of players and their most recent school
+	 */
 	public static String individualResultsGetSchool(TypeOfPlay typeOfPlay)
 	{
 		return "SELECT PlayerName_fkey, SchoolName_fkey "
@@ -555,21 +542,34 @@ public class PostgreSQLJDBC
 	{
 		return "SELECT SchoolName_fkey, NumberPlayers, SumSchoolScores, TournamentNumber, "
 				+ "CASE WHEN NumberPlayers = 1 THEN SumSchoolScores / 2 ELSE SumSchoolScores / NumberPlayers END "
-				+ "AS AverageSchoolScores " + "FROM( "
-				+ "SELECT SchoolName_fkey, sum(SumIndividualScores) as SumSchoolScores, count(SumIndividualScores) "
-				+ "as NumberPlayers, TournamentNumber " + "FROM( "
-				+ "SELECT PlayerName_fkey, SchoolName_fkey, SumIndividualScores, TournamentNumber " + "FROM( "
-				+ "SELECT PlayerName_fkey, SchoolName_fkey, SumIndividualScores, TournamentNumber, "
-				+ "ROW_NUMBER() over (PARTITION BY SchoolName_fkey, TournamentNumber order by SumIndividualScores desc) "
-				+ "AS ScoreRank " + "FROM( "
-				+ "SELECT PlayerName_fkey, SchoolName_fkey, SUM(score) as SumIndividualScores, TournamentNumber "
-				+ "FROM Result LEFT JOIN Player on Player.name=Result.PlayerName_fkey "
-				+ "WHERE Category='" + typeOfResult.category().text() + "' AND Gender='" + typeOfResult.gender().text() + "' "
-				+ "AND TypeOfPlay='" + typeOfPlay.text() + "' "
-				+ "GROUP BY PlayerName_fkey, SchoolName_fkey, TournamentNumber) t1 "
-				+ "GROUP BY t1.PlayerName_fkey, t1.SchoolName_fkey, t1.SumIndividualScores, t1.TournamentNumber) t2 "
+				+ "AS AverageSchoolScores "
+				+ "FROM( "
+					+ "SELECT SchoolName_fkey, sum(SumIndividualScores) as SumSchoolScores, count(SumIndividualScores) "
+					+ "as NumberPlayers, TournamentNumber "
+					+ "FROM( "
+						+ "SELECT PlayerName_fkey, SchoolName_fkey, SumIndividualScores, TournamentNumber "
+						+ "FROM( "
+							+ "SELECT PlayerName_fkey, SchoolName_fkey, SumIndividualScores, TournamentNumber, "
+							+ "ROW_NUMBER() over (PARTITION BY SchoolName_fkey, TournamentNumber order by SumIndividualScores desc) "
+							+ "AS ScoreRank "
+							+ "FROM( "
+								+ " SELECT PlayerName_fkey, SchoolName_fkey, SUM(score) as SumIndividualScores, TournamentNumber "
+								+ " FROM ( "
+									+ "SELECT PlayerName_fkey, SchoolName_fkey, score, tournamentNumber, rank() "
+									+ "over (PARTITION BY PlayerName_fkey order by Score desc) AS ScoreRank "
+									+ "FROM ( "
+										+ "SELECT PlayerName_fkey, SchoolName_fkey, score, TournamentNumber "
+										+ "FROM Result LEFT JOIN Player ON Player.name=Result.PlayerName_fkey "
+										+ "WHERE Category='" + typeOfResult.category().text() +  "' AND Gender='"
+										+ typeOfResult.gender().text() + "' AND TypeOfPlay='" + typeOfPlay.text()
+										+ "' AND score > 0 ) tBestIndividualScoresWithDuplicates "
+									+ "GROUP BY PlayerName_fkey, SchoolName_fkey, score, tournamentNumber) tBestIndividualScores "
+								+ "GROUP BY SchoolName_fkey, PlayerName_fkey, TournamentNumber "
+								+ "ORDER BY PlayerName_fkey) t1 "
+							+ "GROUP BY t1.PlayerName_fkey, t1.SchoolName_fkey, t1.SumIndividualScores, t1.TournamentNumber) t2 "
 				+ "WHERE ScoreRank >= 1 AND ScoreRank <= 5"
 				+ "GROUP BY PlayerName_fkey, SchoolName_fkey, SumIndividualScores, TournamentNumber "
-				+ "ORDER BY SchoolName_fkey) t3 " + "GROUP BY SchoolName_fkey, TournamentNumber) t4 ";
+				+ "ORDER BY SchoolName_fkey) t3 "
+				+ "GROUP BY SchoolName_fkey, TournamentNumber) t4 ";
 	}
 }
