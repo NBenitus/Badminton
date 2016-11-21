@@ -2,11 +2,6 @@ package utilities;
 
 import java.io.*;
 import java.time.LocalDate;
-import java.util.Date;
-
-import excelHelper.ExcelFileReader;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import standings.StandingsCreationHelper.Category;
 
 public class Utilities
@@ -26,6 +21,13 @@ public class Utilities
 		return extension;
 	}
 
+	/**
+	 * Gets a player's category from his/her's date of birth.
+	 *
+	 * @param dateString
+	 *            string that contains the date of birth of the player
+	 * @return category the player belongs to
+	 */
 	public static Category getCategoryFromDateOfBirth(String dateString)
 	{
 		int firstSlash = dateString.indexOf("/");
@@ -54,6 +56,13 @@ public class Utilities
 		return Category.valueOf(categoryString);
 	}
 
+	/**
+	 * Gets the school name from the S1 filenames
+	 *
+	 * @param file
+	 *            S1 file that contains the list of players per school
+	 * @return school name associated to the file
+	 */
 	public static String getSchoolNameFromS1File(File file)
 	{
 		int lastSlash = file.getAbsolutePath().lastIndexOf("\\");
@@ -62,6 +71,13 @@ public class Utilities
 		return file.getAbsolutePath().substring(lastSlash + 1, lastDOT - 1);
 	}
 
+	/**
+	 * Gets the school name from a string in the registration form
+	 *
+	 * @param file
+	 *            file that contains the list of registered players for each school
+	 * @return school name associated to the registration form
+	 */
 	public static String getSchoolNameFromForm(String string)
 	{
 		int colon = string.indexOf(" ");

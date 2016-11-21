@@ -20,13 +20,21 @@ class ChooseResultsExcelFile extends WizardPage
 {
 	private Stage stage;
 
+	/**
+	  * Constructor
+	  *
+	  * @param stageOwner
+	  *            stage object used to display the page
+	  */
 	public ChooseResultsExcelFile(Stage stageOwner)
 	{
-//		super("1. Sélectionner fichier de résultats");
 		super("");
 		stage = stageOwner;
 	}
 
+	/**
+	 * Method to add GUI objects to be displayed upon viewing
+	 */
 	Parent getContent()
 	{
 		VBox vBox = new VBox(10);
@@ -40,6 +48,7 @@ class ChooseResultsExcelFile extends WizardPage
 		final Button openButton = new Button("Sélectionner le fichier de résultats");
 		Label resultsFileLabel = new Label("Aucun fichier choisi.");
 
+		// Add a File chooser object upon click of the Open Button
 		openButton.setOnAction(new EventHandler<ActionEvent>()
 		{
 			@Override
@@ -84,15 +93,25 @@ class ChooseResultsExcelFile extends WizardPage
 		return vBox;
 	}
 
+	/**
+	  * Configures differents parameter (like the title or the extension filters associated to it) of a file chooser
+	  *
+	  * @param fileChooser
+	  *            fileChooser object to be configured
+	  */
 	private static void configureFileChooser(final FileChooser fileChooser)
 	{
+		// Set title
 		fileChooser.setTitle("Excel files");
+
+		//Set initial directory
 		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
 
+		//Add the xls extension filter if it does not already exist
 		if (fileChooser.getExtensionFilters().size() == 0)
 		{
 			fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("XLS", "*.xls"),
-					new FileChooser.ExtensionFilter("All files", "*.*"));
+					new FileChooser.ExtensionFilter("XLSX", "*.xlsx"));
 		}
 	}
 }

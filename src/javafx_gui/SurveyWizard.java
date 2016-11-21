@@ -19,7 +19,7 @@ class SurveyWizard extends Wizard
 
 	public void finish()
 	{
-		Task task = new Task<Void>()
+		Task<Void> task = new Task<Void>()
 		{
 			@Override
 			public Void call() throws Exception

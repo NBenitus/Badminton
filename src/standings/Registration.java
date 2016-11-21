@@ -2,15 +2,23 @@ package standings;
 
 import java.util.ArrayList;
 
-public class Inscription
+public class Registration
 {
 	private ArrayList<Player> singlePlayers;
 	private ArrayList<DoubleTeam> doubleTeams;
 
-	public Inscription(ArrayList<Player> players, ArrayList<DoubleTeam> teams)
+	/**
+	  * Constructor
+	  *
+	  * @param players
+	  *            list of single players registering to the next tournament
+	  * @param teams
+	  *            list of doubles teams registering to the next tournament
+	  */
+	public Registration(ArrayList<Player> singlePlayers, ArrayList<DoubleTeam> doubleTeams)
 	{
-		this.singlePlayers = players;
-		this.doubleTeams = teams;
+		this.singlePlayers = singlePlayers;
+		this.doubleTeams = doubleTeams;
 	}
 
 	public ArrayList<DoubleTeam> getDoubleTeams()

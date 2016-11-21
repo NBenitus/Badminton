@@ -38,11 +38,6 @@ public class StandingsFile
 		this.individualResultTemplateSheetName = individualResultTemplateSheetName;
 	}
 
-	public StandingsFile()
-	{
-
-	}
-
 	/**
 	 * Adds an individual result sheet to the list of individual result sheets
 	 *
@@ -88,7 +83,7 @@ public class StandingsFile
 	}
 
 	/**
-	 * Writes all the sheets (individual and team)
+	 * Writes all the sheets (individuals and team)
 	 */
 	public void writeAllSheets() throws BiffException, IOException, WriteException
 	{
@@ -106,7 +101,7 @@ public class StandingsFile
 				// Write the team result sheet as well
 				if (i == (individualResultSheets.size() - 1))
 				{
-					// Copy the sheet once, after all individual sheets have been copied
+					// Copy the team result sheet once, after all individual sheets have been copied
 					if (j == 0)
 					{
 						ExcelFileProcessor.copySheet(writableWorkbook, TeamResultSheet.TEMPLATETEAMSHEETPREFIX,

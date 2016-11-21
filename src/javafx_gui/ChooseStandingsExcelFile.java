@@ -20,12 +20,21 @@ class ChooseStandingsExcelFile extends WizardPage
 {
 	private Stage stage;
 
+	/**
+	  * Constructor
+	  *
+	  * @param stageOwner
+	  *            stage object used to display the page
+	  */
 	public ChooseStandingsExcelFile(Stage stageOwner)
 	{
 		super("");
 		stage = stageOwner;
 	}
 
+	/**
+	 * Method to add GUI objects to be displayed upon viewing
+	 */
 	Parent getContent()
 	{
 		VBox vBox = new VBox(10);
@@ -39,20 +48,24 @@ class ChooseStandingsExcelFile extends WizardPage
 		labelHeader.setFont(Font.font ("Segoe UI", FontWeight.BOLD, 16));
 		Label standingsFileLabel = new Label("Aucun fichier choisi.");
 
-		final Button openButton = new Button("Sauvegarder");
+		final Button saveButton = new Button("Sauvegarder");
 
-		openButton.setOnAction(new EventHandler<ActionEvent>()
+		// Add a File chooser object upon click of the Save Button
+		saveButton.setOnAction(new EventHandler<ActionEvent>()
 		{
 			@Override
 			public void handle(final ActionEvent e)
 			{
 				FileChooser fileChooser = new FileChooser();
+
+				// Add the XLS extension as the only type the file can be saved
 				FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("XLS files (*.xls)", "*.xls");
 				fileChooser.getExtensionFilters().add(extFilter);
 				File file = fileChooser.showSaveDialog(stage);
 
 				if (file != null)
 				{
+					// Check if the file is already open
 					Alert alertIsOpenExcelFile = Dialog.verifyStandingsExcelFile(file);
 
 					if (alertIsOpenExcelFile == null)
@@ -73,7 +86,7 @@ class ChooseStandingsExcelFile extends WizardPage
 
 		vBox.getChildren().add(labelHeader);
 		vBox.getChildren().add(new Label("Sauvegarder le fichier Excel qui contiendra les classements des tournois"));
-		vBox.getChildren().add(openButton);
+		vBox.getChildren().add(saveButton);
 		vBox.getChildren().add(standingsFileLabel);
 
 		return vBox;

@@ -57,7 +57,7 @@ public class StandingsCreationHelper
 	}
 
 	public enum TypeOfPlay {
-		SINGLE("Simple"), DOUBLE("Double"), COMBINED("Combiné"),;
+		SIMPLE("Simple"), DOUBLE("Double"), COMBINED("Combiné"),;
 
 		private String text;
 
@@ -141,10 +141,15 @@ public class StandingsCreationHelper
 		ExcelFileProcessor.writeAndClose(jExcelFile.getWritableWorkbook(), jExcelFile.getWorkbook());
 	}
 
+	/**
+	 * Method that contains all the steps to create the standings file
+	 *
+	 */
 	public static void createStandingsFile() throws Exception
 	{
 		resultsJExcelFile = new StandingsFile(TEMPLATEFILE, standingsFile, TEMPLATESHEETNAME);
 
+		PostgreSQLJDBC.clearDatabase();
 		addPlayers(resultsFile);
 		addResults(resultsFile);
 		writeResultsFile(resultsJExcelFile, TEMPLATEFILE, standingsFile);
@@ -201,11 +206,7 @@ public class StandingsCreationHelper
 	{
 		resultsFile = new File("C:\\Benoit\\Work\\Java\\Badminton\\RésultatsTournoi.xls");
 		standingsFile = new File("C:\\Benoit\\Work\\Java\\Badminton\\Résultats.xls");
-//		createStandingsFile();
-
-		File file = new File("C:\\Benoit\\Work\\Java\\Badminton\\FormulairesEntrees_Tournoi3.xls");
-		Inscription ins = ExcelFileReader.readListPlayersFromForms(file, "Juvénile");
-		System.out.println("Finished");
+		createStandingsFile();
 	}
 
 	public static void setResultsFile(File resultsFile)

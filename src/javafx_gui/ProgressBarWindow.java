@@ -1,11 +1,7 @@
 package javafx_gui;
 
-import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Group;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.VBox;
@@ -15,6 +11,12 @@ import javafx.stage.Stage;
 
 public class ProgressBarWindow extends VBox
 {
+	/**
+	  * Constructor
+	  *
+	  * @param stageOwner
+	  *            stage object used to display the page
+	  */
 	public ProgressBarWindow(Stage stage)
 	{
         final ProgressBar pb = new ProgressBar();

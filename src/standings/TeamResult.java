@@ -14,8 +14,6 @@ public class TeamResult
 	  *
 	  * @param schoolName
 	  *            name of the school
-	  * @param scores
-	  *            list of scores for all the tournaments for a given type of result (ex: "Benjamin masculin")
 	  * @param rank
 	  *            rank of the school for a given type of result
 	  * @param totalScore
@@ -30,6 +28,12 @@ public class TeamResult
 		scores = new ArrayList<Float>();
 	}
 
+	/**
+	  * Constructor.
+	  *
+	  * @param schoolName
+	  *            name of the school
+	  */
 	public TeamResult(String schoolName)
 	{
 		this.schoolName = schoolName;
@@ -67,6 +71,7 @@ public class TeamResult
 		return totalScore;
 	}
 
+	// To do: verify if this method is really worth it
 	public boolean hasSameName(String name)
 	{
 		boolean hasSameName = false;

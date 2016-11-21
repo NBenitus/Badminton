@@ -13,7 +13,7 @@ import jxl.Sheet;
 import jxl.Workbook;
 import jxl.WorkbookSettings;
 import standings.DoubleTeam;
-import standings.Inscription;
+import standings.Registration;
 import standings.Player;
 import standings.Result;
 import standings.StandingsCreationHelper.Category;
@@ -80,7 +80,7 @@ public class ExcelFileReader
 	 * @return list of players
 	 * @throws Exception
 	 */
-	public static Inscription readListPlayersFromForms(File xlsFile, String sheetName) throws Exception
+	public static Registration readListPlayersFromForms(File xlsFile, String sheetName) throws Exception
 	{
 		initialize(xlsFile);
 
@@ -215,7 +215,7 @@ public class ExcelFileReader
 
 		close();
 
-		return new Inscription(singlePlayers, doubleTeams);
+		return new Registration(singlePlayers, doubleTeams);
 	}
 
 	/**
@@ -388,7 +388,7 @@ public class ExcelFileReader
 		String name = new String();
 		String schoolName = new String();
 		String category = new String();
-		TypeOfPlay typeOfPlay = TypeOfPlay.SINGLE; // Initializing variable
+		TypeOfPlay typeOfPlay = TypeOfPlay.SIMPLE; // Initializing variable
 
 		Cell[] row = null;
 
@@ -427,14 +427,8 @@ public class ExcelFileReader
 						// Do nothing
 						break;
 					case 4:
-						if (row[j].getContents().equals(TypeOfPlay.SINGLE.text()))
-						{
-							typeOfPlay = TypeOfPlay.SINGLE;
-						}
-						else
-						{
-							typeOfPlay = TypeOfPlay.DOUBLE;
-						}
+//						System.out.println(row[j].getContents())
+						typeOfPlay = TypeOfPlay.valueOf(row[j].getContents().toUpperCase());
 						break;
 					case 5:
 					case 6:
