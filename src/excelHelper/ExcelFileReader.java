@@ -4,10 +4,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Locale;
 
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
-
 import jxl.Cell;
 import jxl.Sheet;
 import jxl.Workbook;
@@ -71,13 +67,13 @@ public class ExcelFileReader
 	}
 
 	/**
-	 * Read a list of players from the results Excel file
+	 * Read a list of players from the forms Excel file
 	 *
 	 * @param xlsFile
 	 *            xls file to be read
 	 * @param sheetName
 	 *            name of the sheet that contains the list of players
-	 * @return list of players
+	 * @return registration object that contains the list of single and double players for a school and a category
 	 * @throws Exception
 	 */
 	public static Registration readListPlayersFromForms(File xlsFile, String sheetName) throws Exception
@@ -86,8 +82,8 @@ public class ExcelFileReader
 
 		Sheet sheet = workbook.getSheet(sheetName);
 
-		ArrayList<Player> singlePlayers = new ArrayList<Player>();
-		ArrayList<DoubleTeam> doubleTeams = new ArrayList<DoubleTeam>();
+		ArrayList<Player> listSinglePlayers = new ArrayList<Player>();
+		ArrayList<DoubleTeam> listDoubleTeams = new ArrayList<DoubleTeam>();
 		Cell[] row = null;
 
 		String firstName = new String();
@@ -95,6 +91,7 @@ public class ExcelFileReader
 		String schoolName = Utilities
 				.getSchoolNameFromForm(sheet.getRow(SCHOOLNAMEFORMROW)[SCHOOLNAMEFORMCOLUMN].getContents());
 		Category category = Category.valueOf(sheetName.toUpperCase());
+
 		boolean isPlayer = true;
 		boolean isSingle = true;
 		Gender gender = Gender.MASCULIN;
@@ -105,17 +102,18 @@ public class ExcelFileReader
 		{
 			row = sheet.getRow(i);
 
+			// Check if the row is empty
 			if (row.length > 0)
 			{
-				// Read specific cells for each row. Stopping at the 4th column since other fields are not necessary
+				// Read specific cells for each row.
 				for (int j = 0; j <= LISTPLAYERSFORMFEMININEFIRSTCOLUMN + 1; j++)
 				{
-					// Add the following cells 0: player name, 1: school name, 3: gender. Skipping 2: category since
-					// players can participate in multiple categories
+					// Add the content of the cells to the list of single players and double players
 					switch (j)
 					{
 					case LISTPLAYERSFORMMASCULINEFIRSTCOLUMN:
 
+						// Category headers
 						if (row[LISTPLAYERSFORMMASCULINEFIRSTCOLUMN].getContents().equals("DOUBLE MASCULIN"))
 						{
 							isSingle = false;
@@ -132,6 +130,8 @@ public class ExcelFileReader
 							isPlayer = false;
 							i = sheet.getRows();
 						}
+
+						// Subsection header
 						else if (row[LISTPLAYERSFORMMASCULINEFIRSTCOLUMN].getContents().equals("Nom")
 								|| (row[LISTPLAYERSFORMMASCULINEFIRSTCOLUMN].getContents().equals("")))
 						{
@@ -139,6 +139,7 @@ public class ExcelFileReader
 						}
 						else
 						{
+							isPlayer = true;
 							lastName = row[j].getContents();
 						}
 
@@ -146,14 +147,18 @@ public class ExcelFileReader
 
 					case LISTPLAYERSFORMMASCULINEFIRSTCOLUMN + 1:
 
+						// Check if cell is for a player, instead of a header
 						if (isPlayer == true)
 						{
 							firstName = row[j].getContents();
 
+							// Add player to list of single players
 							if (isSingle == true)
 							{
-								singlePlayers.add(new Player(firstName + " " + lastName, schoolName, gender, category));
+								listSinglePlayers.add(new Player(firstName + " " + lastName, schoolName, gender, category));
 							}
+
+							// Add player to list of double players
 							else
 							{
 								doublePlayer = new Player(firstName + " " + lastName, schoolName, gender, category);
@@ -162,8 +167,11 @@ public class ExcelFileReader
 						break;
 
 					case LISTPLAYERSFORMFEMININEFIRSTCOLUMN:
+
+						// Check if cell exists in row
 						if (j < row.length)
 						{
+							// Check if cell is for a player, instead of a header
 							if (isPlayer == true)
 							{
 								lastName = row[j].getContents();
@@ -174,37 +182,39 @@ public class ExcelFileReader
 
 					case LISTPLAYERSFORMFEMININEFIRSTCOLUMN + 1:
 
+						// Check if cell exists in row
 						if (j < row.length)
 						{
+							// Check if cell is for a player, instead of a header
 							if (isPlayer == true)
 							{
 								if (!lastName.equals(""))
 								{
 									firstName = row[j].getContents();
 
+									// Add player to list of single players
 									if (isSingle == true)
 									{
-										singlePlayers
+										listSinglePlayers
 												.add(new Player(firstName + " " + lastName, schoolName, gender, category));
 									}
 									else
 									{
+										// Both players are specified for a double team
+										// Add players to list of double players
 										if (!lastName.equals("Partenaire"))
 										{
-											doubleTeams.add(new DoubleTeam(doublePlayer,
+											listDoubleTeams.add(new DoubleTeam(doublePlayer,
 													new Player(firstName + " " + lastName, schoolName, gender, category)));
 										}
+										// A player needs a partner for a double team
 										else
 										{
-											doubleTeams.add(new DoubleTeam(doublePlayer,
+											listDoubleTeams.add(new DoubleTeam(doublePlayer,
 													new Player("Partenaire", schoolName, gender, category)));
 										}
 									}
 								}
-							}
-							else
-							{
-								isPlayer = true;
 							}
 						}
 						break;
@@ -215,7 +225,7 @@ public class ExcelFileReader
 
 		close();
 
-		return new Registration(singlePlayers, doubleTeams);
+		return new Registration(listSinglePlayers, listDoubleTeams);
 	}
 
 	/**
@@ -246,6 +256,7 @@ public class ExcelFileReader
 		{
 			row = sheet.getRow(i);
 
+			// Check if row is not empty
 			if (row.length > 0)
 			{
 				// Read specific cells for each row. Stopping at the 4th column since other fields are not necessary
@@ -332,8 +343,6 @@ public class ExcelFileReader
 						break;
 					}
 
-					// Add the following cells 0: player name, 1: school name, 3: gender. Skipping 2: category since
-					// players can participate in multiple categories
 					switch (j)
 					{
 					case 0:
@@ -427,7 +436,6 @@ public class ExcelFileReader
 						// Do nothing
 						break;
 					case 4:
-//						System.out.println(row[j].getContents())
 						typeOfPlay = TypeOfPlay.valueOf(row[j].getContents().toUpperCase());
 						break;
 					case 5:
@@ -436,7 +444,7 @@ public class ExcelFileReader
 					case 8:
 					case 9:
 
-						// JXL seems to change the number of cells in a row if subsquent values are empty
+						// JXL seems to change the number of cells in a row if subsequent values are empty
 						if (j >= row.length)
 						{
 							scores.add(0);
@@ -471,13 +479,13 @@ public class ExcelFileReader
 	}
 
 	/**
-	 * Read a list of results from the xls file
+	 * Read a list of rows (array of cells) from the xls file
 	 *
 	 * @param xlsFile
 	 *            xls file to be read
 	 * @param sheetName
 	 *            name of the sheet that contains the list of results
-	 * @return list of results
+	 * @return list of rows (array of cells)
 	 * @throws Exception
 	 */
 	public static ArrayList<Cell[]> readRows(File xlsFile, String sheetName) throws Exception

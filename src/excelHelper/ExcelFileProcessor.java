@@ -21,6 +21,7 @@ import jxl.write.WritableSheet;
 import jxl.write.WritableWorkbook;
 import jxl.write.WriteException;
 import jxl.write.biff.RowsExceededException;
+import standings.IndividualCombinedResult;
 import standings.IndividualResult;
 import standings.IndividualResultSheet;
 import standings.StandingsFile;
@@ -32,6 +33,19 @@ public class ExcelFileProcessor
 {
 	private static int currentRow;
 
+	/**
+	 * Compares two sheets and writes the differences using a red background
+	 * TO DO: Have two sheet names in case the sheet names for both files is different
+	 *
+	 * @param writableWorkbook
+	 *            workbook that contains the sheet to be copied
+	 * @param firstExcelFileListCells
+	 *            array of cells from the first file
+	 * @param secondExcelFileListCells
+	 *            array of cells from the second file
+	 * @param sheetName
+	 *            name of the sheet to compare in both files
+	 */
 	public static void compareSheet(WritableWorkbook resultsWorkbook, ArrayList<Cell[]> firstExcelFileListCells,
 			ArrayList<Cell[]> secondExcelFileListCells, String sheetName) throws Exception
 	{
@@ -47,8 +61,10 @@ public class ExcelFileProcessor
 		cellFormatNormal.setAlignment(Alignment.CENTRE);
 		cellFormatNormal.setBackground(Colour.WHITE);
 
+		// Iterate over the number of rows in the first file
 		for (int i = 0; i < firstExcelFileListCells.size(); i++)
 		{
+			// Iterate over the number of cells in the row
 			for (int j = 1; j < firstExcelFileListCells.get(i).length; j++)
 			{
 				if ((i < secondExcelFileListCells.size()) && (j < secondExcelFileListCells.get(i).length))
@@ -56,11 +72,15 @@ public class ExcelFileProcessor
 					WritableCell cell = writableSheet.getWritableCell(secondExcelFileListCells.get(i)[j].getColumn(),
 							firstExcelFileListCells.get(i)[j].getRow());
 
-					if (!firstExcelFileListCells.get(i)[j].getContents().equals(secondExcelFileListCells.get(i)[j].getContents()))
+					// Write the cell with a red background if the contents on both files is different
+					if (!firstExcelFileListCells.get(i)[j].getContents()
+							.equals(secondExcelFileListCells.get(i)[j].getContents()))
 					{
 						writeCell(writableSheet, cell, firstExcelFileListCells.get(i)[j].getContents(),
 								cellFormatHighlighted);
 					}
+
+					// Write the cell with a white background if the contents on both files is the same
 					else
 					{
 						writeCell(writableSheet, cell, firstExcelFileListCells.get(i)[j].getContents(),
@@ -76,14 +96,14 @@ public class ExcelFileProcessor
 	 *
 	 * @param writableWorkbook
 	 *            workbook that contains the sheet to be copied
-	 * @param templateSheetName
+	 * @param sourceSheetName
 	 *            name of the template sheet to be copied
-	 * @param copySheetName
+	 * @param newSheetName
 	 *            new name of the copied sheet
 	 */
-	public static void copySheet(WritableWorkbook writableWorkbook, String templateSheetName, String copySheetName)
+	public static void copySheet(WritableWorkbook writableWorkbook, String sourceSheetName, String newSheetName)
 	{
-		writableWorkbook.copySheet(getSheetIndex(writableWorkbook, templateSheetName), copySheetName,
+		writableWorkbook.copySheet(getSheetIndex(writableWorkbook, sourceSheetName), newSheetName,
 				writableWorkbook.getNumberOfSheets() + 1);
 	}
 
@@ -191,7 +211,7 @@ public class ExcelFileProcessor
 			writableSheet.addCell(label);
 		}
 
-		// Create a blank object since the value is empty
+		// Create a blank object if the value is empty
 		else
 		{
 			Blank blank = new Blank(cell.getColumn(), cell.getRow(), cellFormat);
@@ -209,14 +229,18 @@ public class ExcelFileProcessor
 	 * @param typeOfPlay
 	 *            type of play to write (ex: Single)
 	 */
-	public static void writeIndividualResultSheet(WritableWorkbook workbookCopy, IndividualResultSheet resultSheet,
-			TypeOfResult typeOfResult) throws BiffException, IOException, WriteException
+	public static void writeIndividualResultSheet(WritableWorkbook workbookCopy,
+			IndividualResultSheet individualResultSheet, TypeOfResult typeOfResult, int index)
+			throws BiffException, IOException, WriteException
 	{
 		ArrayList<IndividualResult> listIndividualResults = PostgreSQLJDBC.getIndividualResults(typeOfResult,
-				resultSheet.getTypeOfPlay());
+				individualResultSheet.getTypeOfPlay());
 
-		WritableSheet writableSheet = getSheet(workbookCopy, getSheetIndex(workbookCopy, resultSheet.getName()));
+		// Get the sheet object from the sheet's name
+		WritableSheet writableSheet = getSheet(workbookCopy,
+				getSheetIndex(workbookCopy, individualResultSheet.getName()));
 
+		// Cell format for cells without borders
 		WritableCellFormat cellFormatNone = new WritableCellFormat();
 		cellFormatNone.setBorder(Border.NONE, BorderLineStyle.NONE);
 
@@ -230,17 +254,19 @@ public class ExcelFileProcessor
 		cellFormatH1.setFont(cellFontH1);
 
 		// Write heading
-		WritableCell headerCell = writableSheet.getWritableCell(typeOfResult.individualResultSheetStartColumn(),
+		WritableCell headerCell = writableSheet.getWritableCell(
+				(individualResultSheet.getNumberOfColumnsForStandings() * index) + IndividualResultSheet.FIRSTCOLUMN,
 				IndividualResultSheet.HEADERROW);
-		writeCell(writableSheet, headerCell, resultSheet.getHeaderName(), cellFormatH1);
+		writeCell(writableSheet, headerCell, individualResultSheet.getHeaderName(), cellFormatH1);
 
 		// Delete all the rows contents for the type of result
 		for (int i = 0; i < IndividualResultSheet.NUMBEROFROWSTODELETE; i++)
 		{
-			for (int j = 0; j < IndividualResultSheet.NUMBERCOLUMNSFORSTANDINGS; j++)
+			for (int j = 0; j < individualResultSheet.getNumberOfColumnsForStandings(); j++)
 			{
-				WritableCell deleteCell = writableSheet.getWritableCell(
-						typeOfResult.individualResultSheetStartColumn() + j, IndividualResultSheet.FIRSTROW + i);
+				WritableCell deleteCell = writableSheet
+						.getWritableCell((individualResultSheet.getNumberOfColumnsForStandings() * index)
+								+ IndividualResultSheet.FIRSTCOLUMN + j, IndividualResultSheet.FIRSTROW + i);
 				writeCell(writableSheet, deleteCell, "", cellFormatNone);
 			}
 		}
@@ -248,28 +274,65 @@ public class ExcelFileProcessor
 		// Iterate over each individual result
 		for (int i = 0; i < listIndividualResults.size(); i++)
 		{
-			WritableCell rankCell = writableSheet.getWritableCell(typeOfResult.individualResultSheetStartColumn(),
-					IndividualResultSheet.FIRSTROW + i);
+
+			// Rank cell
+			WritableCell rankCell = writableSheet
+					.getWritableCell((individualResultSheet.getNumberOfColumnsForStandings() * index)
+							+ IndividualResultSheet.FIRSTCOLUMN, IndividualResultSheet.FIRSTROW + i);
 			writeCell(writableSheet, rankCell, listIndividualResults.get(i).getRank() + "", cellFormatNone);
 
-			WritableCell playerNameCell = writableSheet.getWritableCell(
-					typeOfResult.individualResultSheetStartColumn() + 1, IndividualResultSheet.FIRSTROW + i);
+			// Player name cell
+			WritableCell playerNameCell = writableSheet
+					.getWritableCell((individualResultSheet.getNumberOfColumnsForStandings() * index)
+							+ IndividualResultSheet.FIRSTCOLUMN + 1, IndividualResultSheet.FIRSTROW + i);
 			writeCell(writableSheet, playerNameCell, listIndividualResults.get(i).getPlayerName(), cellFormatNone);
 
-			WritableCell schoolNameCell = writableSheet.getWritableCell(
-					typeOfResult.individualResultSheetStartColumn() + 2, IndividualResultSheet.FIRSTROW + i);
+			// School name cell
+			WritableCell schoolNameCell = writableSheet
+					.getWritableCell((individualResultSheet.getNumberOfColumnsForStandings() * index)
+							+ IndividualResultSheet.FIRSTCOLUMN + 2, IndividualResultSheet.FIRSTROW + i);
 			writeCell(writableSheet, schoolNameCell, listIndividualResults.get(i).getSchoolName(), cellFormatNone);
 
-			WritableCell scoreCell = writableSheet.getWritableCell(typeOfResult.individualResultSheetStartColumn() + 3,
-					IndividualResultSheet.FIRSTROW + i);
-			writeCell(writableSheet, scoreCell, listIndividualResults.get(i).getScore() + "", cellFormatNone);
+			// Write the extra single and double score cells as well as the total score for Individual Combined results
+			if (listIndividualResults.get(i) instanceof IndividualCombinedResult)
+			{
+				// Single score cell
+				WritableCell singleScoreCell = writableSheet
+						.getWritableCell((individualResultSheet.getNumberOfColumnsForStandings() * index)
+								+ IndividualResultSheet.FIRSTCOLUMN + 3, IndividualResultSheet.FIRSTROW + i);
+				writeCell(writableSheet, singleScoreCell, listIndividualResults.get(i).getSingleScore() + "",
+						cellFormatNone);
+
+				// Double score cell
+				WritableCell doubleScoreCell = writableSheet
+						.getWritableCell((individualResultSheet.getNumberOfColumnsForStandings() * index)
+								+ IndividualResultSheet.FIRSTCOLUMN + 4, IndividualResultSheet.FIRSTROW + i);
+				writeCell(writableSheet, doubleScoreCell, listIndividualResults.get(i).getDoubleScore() + "",
+						cellFormatNone);
+
+				// Total score cell
+				WritableCell totalScoreCell = writableSheet
+						.getWritableCell((individualResultSheet.getNumberOfColumnsForStandings() * index)
+								+ IndividualResultSheet.FIRSTCOLUMN + 5, IndividualResultSheet.FIRSTROW + i);
+				writeCell(writableSheet, totalScoreCell, listIndividualResults.get(i).getScore() + "", cellFormatNone);
+			}
+
+			// Write the score for Single and Double results
+			else
+			{
+				// Score cell
+				WritableCell scoreCell = writableSheet
+						.getWritableCell((individualResultSheet.getNumberOfColumnsForStandings() * index)
+								+ IndividualResultSheet.FIRSTCOLUMN + 3, IndividualResultSheet.FIRSTROW + i);
+				writeCell(writableSheet, scoreCell, listIndividualResults.get(i).getScore() + "", cellFormatNone);
+			}
 		}
 	}
 
 	/**
 	 * Writes the team result sheet
 	 *
-	 * @param jExcelFile
+	 * @param standingsFile
 	 *            jExcelFile object containing the sheets for the standings
 	 * @param workbookCopy
 	 *            copy of the workbook where sheets are written
@@ -278,22 +341,27 @@ public class ExcelFileProcessor
 	 * @param typeOfResult
 	 *            type of result (ex: Benjamin masculin) to write
 	 */
-	public static void writeTeamResultSheet(StandingsFile jExcelFile, WritableWorkbook workbookCopy,
+	public static void writeTeamResultSheet(StandingsFile standingsFile, WritableWorkbook workbookCopy,
 			TeamResultSheet teamResultSheet, TypeOfResult typeOfResult)
 			throws BiffException, IOException, WriteException
 	{
+		// Get the sheet object from the sheet's name
 		WritableSheet writableSheet = getSheet(workbookCopy, getSheetIndex(workbookCopy, teamResultSheet.getName()));
+
+		// Get the list of team results for the matching type of result
 		ArrayList<TeamResult> teamsResults = PostgreSQLJDBC.getTeamResults(typeOfResult);
 
-		// Cell formats for the borders, left, right and middle (which means no border)
+		// Cell formats for the left most cells (left border)
 		WritableCellFormat cellFormatLeft = new WritableCellFormat();
 		cellFormatLeft.setBorder(Border.LEFT, BorderLineStyle.MEDIUM, Colour.BLACK);
 		cellFormatLeft.setAlignment(Alignment.CENTRE);
 
+		// Cell formats for the right most cells (right border)
 		WritableCellFormat cellFormatRight = new WritableCellFormat();
 		cellFormatRight.setBorder(Border.RIGHT, BorderLineStyle.MEDIUM, Colour.BLACK);
 		cellFormatRight.setAlignment(Alignment.CENTRE);
 
+		// Cell formats for the middle cells (no border)
 		WritableCellFormat cellFormatMiddle = new WritableCellFormat();
 		cellFormatMiddle.setBorder(Border.NONE, BorderLineStyle.NONE);
 		cellFormatMiddle.setAlignment(Alignment.CENTRE);
@@ -324,7 +392,7 @@ public class ExcelFileProcessor
 			}
 			else if (typeOfResult == TypeOfResult.BENJAMIN_MASCULIN)
 			{
-				jExcelFile.getTeamResultSheet().setRowPageBreak(currentRow - 1);
+				standingsFile.getTeamResultSheet().setRowPageBreak(currentRow - 1);
 			}
 
 			WritableCell h1Cell = writableSheet.getWritableCell(TeamResultSheet.FIRSTCOLUMN, currentRow);
@@ -340,23 +408,42 @@ public class ExcelFileProcessor
 		currentRow++;
 
 		// Empty line cells below the h2 header
-		WritableCell emptyLineCellLeft = writableSheet.getWritableCell(TeamResultSheet.FIRSTCOLUMN, currentRow);
-		writeCell(writableSheet, emptyLineCellLeft, "", cellFormatLeft);
+		WritableCell emptyLineCellBelowH2HeaderLeft = writableSheet.getWritableCell(TeamResultSheet.FIRSTCOLUMN,
+				currentRow);
+		writeCell(writableSheet, emptyLineCellBelowH2HeaderLeft, "", cellFormatLeft);
 
-		WritableCell emptyLineCellRight = writableSheet
+		WritableCell emptyLineCellBelowH2HeaderRight = writableSheet
 				.getWritableCell(TeamResultSheet.FIRSTCOLUMN + TeamResultSheet.NUMBEROFCOLUMNSTOTAL - 1, currentRow);
-		writeCell(writableSheet, emptyLineCellRight, "", cellFormatRight);
+		writeCell(writableSheet, emptyLineCellBelowH2HeaderRight, "", cellFormatRight);
 
 		// Skip the column headers ("Rang", "École", "Tournoi1", etc.)
 		currentRow += 2;
 
-		// Empty line cells below the column headers
-		emptyLineCellLeft = writableSheet.getWritableCell(TeamResultSheet.FIRSTCOLUMN, currentRow);
-		writeCell(writableSheet, emptyLineCellLeft, "", cellFormatLeft);
+		// Empty line between column headers and school information -- Bug fix for black line at the last category
+		for (int i = 0; i < TeamResultSheet.FIRSTCOLUMN + TeamResultSheet.NUMBEROFCOLUMNSTOTAL; i++)
+		{
+			switch (i)
+			{
+			case 0:
+				// Empty line cells below the column headers
+				WritableCell emptyLineCellBelowColumnHeadersLeft = writableSheet
+						.getWritableCell(TeamResultSheet.FIRSTCOLUMN + i, currentRow);
+				writeCell(writableSheet, emptyLineCellBelowColumnHeadersLeft, "", cellFormatLeft);
+				break;
 
-		emptyLineCellRight = writableSheet
-				.getWritableCell(TeamResultSheet.FIRSTCOLUMN + TeamResultSheet.NUMBEROFCOLUMNSTOTAL - 1, currentRow);
-		writeCell(writableSheet, emptyLineCellRight, "", cellFormatRight);
+			case TeamResultSheet.NUMBEROFCOLUMNSTOTAL - 1:
+				WritableCell emptyLineCellBelowColumnHeadersRight = writableSheet
+						.getWritableCell(TeamResultSheet.FIRSTCOLUMN + i, currentRow);
+				writeCell(writableSheet, emptyLineCellBelowColumnHeadersRight, "", cellFormatRight);
+				break;
+
+			default:
+				WritableCell emptyLineCellBelowColumnHeadersMiddle = writableSheet
+						.getWritableCell(TeamResultSheet.FIRSTCOLUMN + i, currentRow);
+				writeCell(writableSheet, emptyLineCellBelowColumnHeadersMiddle, "", cellFormatMiddle);
+				break;
+			}
+		}
 
 		currentRow++;
 
@@ -367,16 +454,19 @@ public class ExcelFileProcessor
 			if (((typeOfResult == TypeOfResult.JUVENIL_MASCULIN) || (typeOfResult == TypeOfResult.JUVENIL_FEMININ))
 					&& (i == teamsResults.size() - 1))
 			{
+				// Cell format for the bottom left cell (bottom left border)
 				cellFormatLeft = new WritableCellFormat();
 				cellFormatLeft.setBorder(Border.LEFT, BorderLineStyle.MEDIUM, Colour.BLACK);
 				cellFormatLeft.setBorder(Border.BOTTOM, BorderLineStyle.MEDIUM, Colour.BLACK);
 				cellFormatLeft.setAlignment(Alignment.CENTRE);
 
+				// Cell format for the bottom right cell (bottom right border)
 				cellFormatRight = new WritableCellFormat();
 				cellFormatRight.setBorder(Border.RIGHT, BorderLineStyle.MEDIUM, Colour.BLACK);
 				cellFormatRight.setBorder(Border.BOTTOM, BorderLineStyle.MEDIUM, Colour.BLACK);
 				cellFormatRight.setAlignment(Alignment.CENTRE);
 
+				// Cell format for the bottom middle cells (bottom border)
 				cellFormatMiddle = new WritableCellFormat();
 				cellFormatMiddle.setBorder(Border.NONE, BorderLineStyle.NONE, Colour.BLACK);
 				cellFormatMiddle.setBorder(Border.BOTTOM, BorderLineStyle.MEDIUM, Colour.BLACK);
@@ -386,9 +476,11 @@ public class ExcelFileProcessor
 			// Insert new row to write the team result
 			writableSheet.insertRow(currentRow);
 
+			// Rank cell
 			WritableCell rankCell = writableSheet.getWritableCell(TeamResultSheet.FIRSTCOLUMN, currentRow);
 			writeCell(writableSheet, rankCell, teamsResults.get(i).getRank() + "", cellFormatLeft);
 
+			// School name cell
 			WritableCell schoolNameCell = writableSheet.getWritableCell(TeamResultSheet.FIRSTCOLUMN + 1, currentRow);
 			writeCell(writableSheet, schoolNameCell, teamsResults.get(i).getSchoolName(), cellFormatMiddle);
 
@@ -397,6 +489,7 @@ public class ExcelFileProcessor
 			{
 				float score;
 
+				// Unsure what this does
 				if (teamsResults.get(i).getScores().size() < (j + 1))
 				{
 					score = 0;
@@ -410,10 +503,11 @@ public class ExcelFileProcessor
 				writeCell(writableSheet, scoreCell, String.format("%.2f", score), cellFormatMiddle);
 			}
 
-			WritableCell sumCell = writableSheet
+			// Total score for the schools cell
+			WritableCell totalScoreCell = writableSheet
 					.getWritableCell(TeamResultSheet.FIRSTCOLUMN + 2 + TeamResultSheet.NUMBEROFTOURNAMENTS, currentRow);
-			sumCell.setCellFormat(cellFormatRight);
-			writeCell(writableSheet, sumCell, String.format("%.2f", teamsResults.get(i).getTotalScore()),
+			totalScoreCell.setCellFormat(cellFormatRight);
+			writeCell(writableSheet, totalScoreCell, String.format("%.2f", teamsResults.get(i).getTotalScore()),
 					cellFormatRight);
 
 			currentRow++;

@@ -41,6 +41,7 @@ class ChooseResultsExcelFile extends WizardPage
 		vBox.setPadding(new Insets(30, 0, 30, 0));
 		vBox.setSpacing(25);
 
+		// Disable the Next and Finish buttons
 		nextButton.setDisable(true);
 		finishButton.setDisable(true);
 
@@ -57,10 +58,13 @@ class ChooseResultsExcelFile extends WizardPage
 				configureFileChooser(fileChooser);
 				File file = fileChooser.showOpenDialog(stage);
 
+				// Check if file provided is not null (should not happen)
 				if (file != null)
 				{
+					// Check if the file is a valid XLS file
 					Alert alert = Dialog.verifyResultsExcelFile(file);
 
+					// Set results file in the StandingsCreationHelper class
 					if (alert == null)
 					{
 						nextButton.setDisable(false);
@@ -68,6 +72,8 @@ class ChooseResultsExcelFile extends WizardPage
 
 						StandingsCreationHelper.setResultsFile(file);
 					}
+
+					// The file provided is invalid, show error message
 					else
 					{
 						alert.showAndWait();
@@ -85,6 +91,7 @@ class ChooseResultsExcelFile extends WizardPage
 				+ "Exemple: C:\\Badminton\\Résultats16-17Tournoi1.xls.");
 		labelDescription.setWrapText(true);
 
+		// Add all other objects to the VBox object
 		vBox.getChildren().add(labelHeader);
 		vBox.getChildren().add(labelDescription);
 		vBox.getChildren().add(openButton);
@@ -94,7 +101,7 @@ class ChooseResultsExcelFile extends WizardPage
 	}
 
 	/**
-	  * Configures differents parameter (like the title or the extension filters associated to it) of a file chooser
+	  * Configures different parameters (like the title or the extension filters associated to it) of a file chooser
 	  *
 	  * @param fileChooser
 	  *            fileChooser object to be configured

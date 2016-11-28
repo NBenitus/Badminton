@@ -11,18 +11,17 @@ import jxl.write.WritableWorkbook;
 
 public class CompareFile
 {
-	public void main(String[] args)
+	public static void main(String[] args) throws Exception
 	{
 		File excelOne = new File("C:\\Benoit\\Work\\Java\\Badminton\\Résultats.xls");
-		File excelTwo = new File("C:\\Benoit\\Work\\Java\\Badminton\\Résultats_Normand.xls");
+		File excelTwo = new File("C:\\Benoit\\Work\\Java\\Badminton\\Résultats_MisAJour.xls");
 		File excelThree = new File("C:\\Benoit\\Work\\Java\\Badminton\\Compare_Test.xls");
 
-//		StandingsFile resultsJExcelFile = new StandingsFile();
-//		resultsJExcelFile.compareFiles(excelOne, excelTwo, excelThree);
+		compareFiles(excelOne, excelTwo, excelThree);
 	}
 
-	// To be continued
-	public void compareFiles(File excelFileOne, File excelFileTwo, File compareResultFile) throws Exception
+	// In progress
+	public static void compareFiles(File excelFileOne, File excelFileTwo, File compareResultFile) throws Exception
 	{
 		Workbook workbook = Workbook.getWorkbook(excelFileOne);
 		WritableWorkbook writableWorkbook = Workbook.createWorkbook(compareResultFile, workbook);
@@ -36,13 +35,5 @@ public class CompareFile
 				"Classement_Individuel_Combiné");
 
 		ExcelFileProcessor.writeAndClose(writableWorkbook, workbook);
-
-//		firstExcelFileListCells = ExcelFileReader.readRows(excelFileOne, teamResultSheet.getName());
-//		secondExcelFileListCells = ExcelFileReader.readRows(excelFileTwo, teamResultSheet.getName());
-//
-//		JExcelFileProcessor.compareSheet(writableWorkbook, firstExcelFileListCells, secondExcelFileListCells,
-//				teamResultSheet.getName());
-//
-//		close(writableWorkbook, workbook);
 	}
 }

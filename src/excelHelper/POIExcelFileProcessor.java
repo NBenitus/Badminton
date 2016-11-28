@@ -20,24 +20,25 @@ public class POIExcelFileProcessor
 	private static InputStream inputStream;
 
 	/**
-	 * Adds column page breaks to a sheet
+	 * Adds page breaks (columns and rows) to a sheet
 	 *
-	 * @param sheetName
-	 *            name of the sheet to add column page breaks
-	 * @param typeOfResult
-	 *            type of result (ex: Benjamin masculin) which to set column page breaks
+	 * @param pageBreaks
+	 *            list of page breaks objects that contain the name of the sheet, as well as the column and row page breaks
 	 */
 	public static void addPageBreaks(ArrayList<PageBreak> pageBreaks)
 	{
 		try
 		{
+			// Iterate for each page break object
 			for (int i = 0; i < pageBreaks.size(); i++)
 			{
-
+				// Get sheet from page break object
 				HSSFSheet sheet = workbook.getSheet(pageBreaks.get(i).getSheetName());
 
+				// Line needed to set the page breaks in the page
 				sheet.setAutobreaks(false);
 
+				// Iterate over all the row page breaks
 				if (pageBreaks.get(i).getRowPageBreaks() != null)
 				{
 					for (int j = 0; j < pageBreaks.get(i).getRowPageBreaks().size(); j ++)
@@ -46,6 +47,7 @@ public class POIExcelFileProcessor
 					}
 				}
 
+				// Iterate over all the column page breaks
 				if (pageBreaks.get(i).getColumnPageBreaks() != null)
 				{
 					for (int j = 0; j < pageBreaks.get(i).getColumnPageBreaks().size(); j ++)

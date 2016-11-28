@@ -11,12 +11,22 @@ class SurveyWizard extends Wizard
 {
 	Stage owner;
 
+	/**
+	  * Constructor
+	  *
+	  * @param stageOwner
+	  *            stage object used to display the page
+	  */
 	public SurveyWizard(Stage owner)
 	{
 		super(new ChooseResultsExcelFile(owner), new ChooseStandingsExcelFile(owner));
 		this.owner = owner;
 	}
 
+	/**
+	  * Method executed when the user completes the wizard
+	  *
+	  */
 	public void finish()
 	{
 		Task<Void> task = new Task<Void>()
@@ -24,11 +34,13 @@ class SurveyWizard extends Wizard
 			@Override
 			public Void call() throws Exception
 			{
+				// Create the standings file
 				StandingsCreationHelper.createStandingsFile();
 				return null;
 			}
 		};
 
+		// Display error message if creating the standing file fails
 		task.setOnFailed(e -> {
 			Exception ex = (Exception) task.getException();
 			Alert alertStandingsFileExecution = Dialog.getExceptionDialog(ex,
@@ -39,6 +51,7 @@ class SurveyWizard extends Wizard
 
 		task.setOnSucceeded(e -> owner.close());
 
+		// Display progress bar window while the standings file is created
 		Scene scene = new Scene(new ProgressBarWindow(owner));
 		owner.setScene(scene);
 		owner.show();
@@ -46,6 +59,10 @@ class SurveyWizard extends Wizard
 		new Thread(task).start();
 	}
 
+	/**
+	  * Method executed when the user cancels the wizard
+	  *
+	  */
 	public void cancel()
 	{
 		System.out.println("Cancelled");

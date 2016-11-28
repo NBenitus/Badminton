@@ -84,6 +84,7 @@ class ChooseStandingsExcelFile extends WizardPage
 			}
 		});
 
+		// Add all other objects to the VBox object
 		vBox.getChildren().add(labelHeader);
 		vBox.getChildren().add(new Label("Sauvegarder le fichier Excel qui contiendra les classements des tournois"));
 		vBox.getChildren().add(saveButton);

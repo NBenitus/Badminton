@@ -7,8 +7,7 @@ public class TeamResultSheet
 
 	public int rowPageBreak;
 
-	public static final String TEMPLATETEAMSHEETPREFIX = "Moyenne par ecole PDF";
-	public static final String OUTPUTTEAMSHEETPREFIX = "Classement_par_équipes";
+	public static final String TEMPLATETEAMSHEETPREFIX = "Classement_Équipes";
 
 	public static final int FIRSTROW = 6;
 	public static final int FIRSTCOLUMN = 0;
@@ -18,13 +17,10 @@ public class TeamResultSheet
 
 	/**
 	  * Constructor.
-	  *
-	  * @param excelFile
-	  *            JExcel File object that is the parent of the team result sheet
 	  */
 	public TeamResultSheet()
 	{
-		name = OUTPUTTEAMSHEETPREFIX;
+		name = TEMPLATETEAMSHEETPREFIX;
 	}
 
 	public String getName()

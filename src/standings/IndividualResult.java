@@ -27,6 +27,11 @@ public class IndividualResult
 		this.rank = rank;
 	}
 
+	public int getDoubleScore()
+	{
+		return -1;
+	}
+
 	public String getPlayerName()
 	{
 		return playerName;
@@ -40,6 +45,11 @@ public class IndividualResult
 	public String getSchoolName()
 	{
 		return schoolName;
+	}
+
+	public int getSingleScore()
+	{
+		return -1;
 	}
 
 	public int getScore()

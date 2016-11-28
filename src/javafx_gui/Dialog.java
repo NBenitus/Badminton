@@ -19,8 +19,15 @@ import utilities.Utilities;
 
 public class Dialog
 {
-
-	public static Alert getExceptionDialog(Exception e, String message)
+	/**
+	  * Displays an error message dialog when an exception is encountered
+	  *
+	  * @param exception
+	  *            exception thrown by one of the methods
+	  * @param message
+	  *            message to be displayed in the error message dialog
+	  */
+	public static Alert getExceptionDialog(Exception exception, String message)
 	{
 		Alert alert = new Alert(AlertType.ERROR);
 		alert.setTitle("Erreur!");
@@ -30,7 +37,7 @@ public class Dialog
 		// Create expandable Exception.
 		StringWriter sw = new StringWriter();
 		PrintWriter pw = new PrintWriter(sw);
-		e.printStackTrace(pw);
+		exception.printStackTrace(pw);
 		String exceptionText = sw.toString();
 
 		Label label = new Label("The exception stacktrace was:");
@@ -55,10 +62,17 @@ public class Dialog
 		return alert;
 	}
 
+	/**
+	  * Verify if the results file chosen by the user is valid
+	  *
+	  * @param file
+	  *            results file chosen by the user
+	  */
 	public static Alert verifyResultsExcelFile(File file)
 	{
 		Alert alert = null;
 
+		// Display a error message that XLSX files cannot be processed
 		if (Utilities.getFileExtension(file).equals("xlsx"))
 		{
 			alert = new Alert(AlertType.ERROR);
@@ -68,6 +82,7 @@ public class Dialog
 					+ "Veuillez sauver le fichier de résultats en format \".xls\" !");
 		}
 
+		// Display a error message that only XLS files are accepted
 		else if (!(Utilities.getFileExtension(file).equals("xls")))
 		{
 			alert = new Alert(AlertType.ERROR);
@@ -75,6 +90,8 @@ public class Dialog
 			alert.setHeaderText("Fichier invalide!");
 			alert.setContentText("Le fichier sélectionné n'est pas de type Excel!");
 		}
+
+		// Initialize the Excel file
 		else
 		{
 			try
@@ -93,12 +110,19 @@ public class Dialog
 		return alert;
 	}
 
+	/**
+	  * Verify if the standings file chosen by the user is valid
+	  *
+	  * @param file
+	  *            standings file chosen by the user
+	  */
 	public static Alert verifyStandingsExcelFile(File file)
 	{
 		Alert alert = null;
 
 		try
 		{
+			// Check if the file is not opened
 			if(file.exists() && !(file.length() == 0) && !file.isDirectory())
 			{
 				Workbook workbook = Workbook.getWorkbook(file);;
@@ -107,6 +131,9 @@ public class Dialog
 				workbookCopy.close();
 			}
 		}
+
+		// Display an error message that the file is already opened
+		// (Note: If the file is corruped, this message will also be displayed. TO DO)
 		catch (BiffException | IOException ex)
 		{
 			alert = new Alert(AlertType.ERROR);

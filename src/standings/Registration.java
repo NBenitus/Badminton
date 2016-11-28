@@ -10,9 +10,9 @@ public class Registration
 	/**
 	  * Constructor
 	  *
-	  * @param players
+	  * @param singlePlayers
 	  *            list of single players registering to the next tournament
-	  * @param teams
+	  * @param doubleTeams
 	  *            list of doubles teams registering to the next tournament
 	  */
 	public Registration(ArrayList<Player> singlePlayers, ArrayList<DoubleTeam> doubleTeams)

@@ -13,10 +13,12 @@ public class IndividualResultSheet
 	public static final int FIRSTROWBREAK = 47;
 	public static final int SECONDROWBREAK = 84;
 
+	public static final String TEMPLATESHEETNAME = "Classement_Individuel";
 	public static final String OUTPUTINDIVIDUALSHEETPREFIX = "Classement_Individuel_";
 	public static final String HEADERNAMEPREFIX = "Classement Individuel - ";
 	public static final int NUMBERCOLUMNSFORSTANDINGS = 4;
 
+	public static final int FIRSTCOLUMN = 2;
 	public static final int FIRSTROW = 13;
 	public static final int NUMBEROFROWSTODELETE = 150;
 	public static final int HEADERROW = 5;
@@ -26,16 +28,14 @@ public class IndividualResultSheet
 	/**
 	  * Constructor.
 	  *
-	  * @param outputExcelFile
-	  *            excel file where to write the individual results
-	  * @param templateSheetName
-	  *            name of the template sheet used
+	  * @param standingsFile
+	  *            standings file where to write the individual results
 	  * @param newSheetName
 	  *            name of the output sheet
 	  * @param typeOfPlay
 	  *            type of play (either single or double)
 	  */
-	public IndividualResultSheet(StandingsFile outputExcelFile, String templateSheetName, String newSheetName, TypeOfPlay typeOfPlay)
+	public IndividualResultSheet(StandingsFile standingsFile, String newSheetName, TypeOfPlay typeOfPlay)
 	{
 		this.name = OUTPUTINDIVIDUALSHEETPREFIX + newSheetName;
 		this.headerName = HEADERNAMEPREFIX + newSheetName;
@@ -53,6 +53,16 @@ public class IndividualResultSheet
 	public String getHeaderName()
 	{
 		return headerName;
+	}
+
+	public int getNumberOfColumnsForStandings()
+	{
+		return NUMBERCOLUMNSFORSTANDINGS;
+	}
+
+	public String getTemplateSheetName()
+	{
+		return TEMPLATESHEETNAME;
 	}
 
 	public ArrayList<Integer> getRowPageBreaks()

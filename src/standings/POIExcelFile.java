@@ -28,6 +28,7 @@ public class POIExcelFile
 		this.file = file;
 		this.listIndividualResultSheets = listIndividualResultSheets;
 		this.teamResultSheet = teamResultSheet;
+		POIExcelFileProcessor.initializeFile(file);
 	}
 
 	/**
@@ -36,7 +37,6 @@ public class POIExcelFile
 	 */
 	public void addPageBreaks() throws IOException
 	{
-		POIExcelFileProcessor.initializeFile(file);
 		ArrayList<PageBreak> pageBreaks = new ArrayList<PageBreak>();
 
 		// Iterate over all the individual result sheets
@@ -47,29 +47,24 @@ public class POIExcelFile
 			// Iterate over each type of result
 			for (int j = 0; j < StandingsCreationHelper.TypeOfResult.values().length; j++)
 			{
-				individualResultPageBreak.addColumnPageBreak(
-						StandingsCreationHelper.TypeOfResult.values()[j].individualResultSheetStartColumn() - 1);
-//				individualResultPageBreak.setRowPageBreaks(listIndividualResultSheets.get(i).getRowPageBreaks());
+//				individualResultPageBreak.addColumnPageBreak(
+//						StandingsCreationHelper.TypeOfResult.values()[j].individualResultSheetStartColumn() - 1);
+				individualResultPageBreak.addColumnPageBreak(IndividualResultSheet.FIRSTCOLUMN
+						+ (j * listIndividualResultSheets.get(i).getNumberOfColumnsForStandings() - 1));
 				individualResultPageBreak.setRowPageBreaks(null);
 			}
 
 			pageBreaks.add(individualResultPageBreak);
 		}
 
-		pageBreaks.add(new PageBreak(teamResultSheet.getName(), teamResultSheet.getRowPageBreak(), null));
+		ArrayList<Integer> rowPageBreak = new ArrayList<Integer>();
+		rowPageBreak.add(teamResultSheet.getRowPageBreak());
+
+		pageBreaks.add(new PageBreak(teamResultSheet.getName(), rowPageBreak, null));
 
 		POIExcelFileProcessor.addPageBreaks(pageBreaks);
 
 		// Close and write the file
 		POIExcelFileProcessor.closeFile();
 	}
-
-	// public void setBorderToCells(int lastRow) throws IOException
-	// {
-	// POIExcelFileProcessor.initializeFile(file);
-	//
-	// POIExcelFileProcessor.setBorderToCells(jExcelFile.getTeamResulSheets().getName(), jExcelFile.getLastRow());
-	//
-	// POIExcelFileProcessor.closeFile();
-	// }
 }
