@@ -10,12 +10,15 @@ import java.util.ArrayList;
 
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import standings.PageBreak;
+import pageBreak.PageBreak;
 
 public class POIExcelFileProcessor
 {
-	private static File excelFile;
+	private static File inputFile;
+	private static File outputFile;
+
 	private static HSSFWorkbook workbook;
+
 	private static FileOutputStream fileOut;
 	private static InputStream inputStream;
 
@@ -23,7 +26,8 @@ public class POIExcelFileProcessor
 	 * Adds page breaks (columns and rows) to a sheet
 	 *
 	 * @param pageBreaks
-	 *            list of page breaks objects that contain the name of the sheet, as well as the column and row page breaks
+	 *            list of page breaks objects that contain the name of the sheet, as well as the column and row page
+	 *            breaks
 	 */
 	public static void addPageBreaks(ArrayList<PageBreak> pageBreaks)
 	{
@@ -41,7 +45,7 @@ public class POIExcelFileProcessor
 				// Iterate over all the row page breaks
 				if (pageBreaks.get(i).getRowPageBreaks() != null)
 				{
-					for (int j = 0; j < pageBreaks.get(i).getRowPageBreaks().size(); j ++)
+					for (int j = 0; j < pageBreaks.get(i).getRowPageBreaks().size(); j++)
 					{
 						sheet.setRowBreak(pageBreaks.get(i).getRowPageBreaks().get(j));
 					}
@@ -50,16 +54,14 @@ public class POIExcelFileProcessor
 				// Iterate over all the column page breaks
 				if (pageBreaks.get(i).getColumnPageBreaks() != null)
 				{
-					for (int j = 0; j < pageBreaks.get(i).getColumnPageBreaks().size(); j ++)
+					for (int j = 0; j < pageBreaks.get(i).getColumnPageBreaks().size(); j++)
 					{
 						sheet.setColumnBreak(pageBreaks.get(i).getColumnPageBreaks().get(j));
 					}
 				}
 			}
 
-			fileOut = new FileOutputStream(excelFile);
-
-			workbook.write(fileOut);
+			write();
 		}
 		catch (Exception e)
 		{
@@ -68,29 +70,49 @@ public class POIExcelFileProcessor
 	}
 
 	/**
-	 * Closes the excel file
+	 * Closes the objects used for the Excel file
 	 */
-	public static void closeFile() throws IOException
+	public static void close() throws IOException
 	{
 		workbook.close();
+
 		inputStream.close();
+
+		fileOut.flush();
 		fileOut.close();
 	}
 
 	/**
-	 * Creates the objects to write the excel file
+	 * Creates the HSSF Workbook and other objects to write the excel file
 	 *
-	 * @param file
+	 * @param inputFileArg
 	 *            excel file to makes changes to
 	 */
-	public static void initializeFile(File file) throws FileNotFoundException, IOException
+	public static HSSFWorkbook initialize(File inputFileArg, File outputFileArg)
+			throws FileNotFoundException, IOException
 	{
-		excelFile = file;
+		inputFile = inputFileArg;
+		outputFile = outputFileArg;
 
-		inputStream = new FileInputStream(excelFile);
+		inputStream = new FileInputStream(inputFile);
 
-		// Create Workbook instance holding reference to .xlsx file
+		// Create HSSF Workbook instance holding reference to .xls file
 		workbook = new HSSFWorkbook(inputStream);
+
+		return workbook;
 	}
 
+	public static void write()
+	{
+		try
+		{
+			fileOut = new FileOutputStream(outputFile);
+
+			workbook.write(fileOut);
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
 }

@@ -1,4 +1,6 @@
-package standings;
+package registration;
+
+import standings.Player;
 
 public class DoubleTeam
 {

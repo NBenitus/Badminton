@@ -1,6 +1,8 @@
-package standings;
+package registration;
 
 import java.util.ArrayList;
+
+import standings.Player;
 
 public class Registration
 {

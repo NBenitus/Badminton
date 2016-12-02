@@ -2,6 +2,7 @@ package standings;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 import excelHelper.ExcelFileProcessor;
@@ -27,10 +28,12 @@ public class StandingsFile
 	 * @param outputFile
 	 *            file that will contain the created team and individual results
 	 */
-	public StandingsFile(File templateFile, File outputFile)
+//	public StandingsFile(File templateFile, File outputFile)
+	public StandingsFile(InputStream inputStream, File outputFile)
 			throws BiffException, IOException, WriteException
 	{
-		this.workbook = Workbook.getWorkbook(templateFile);
+//		this.workbook = Workbook.getWorkbook(templateFile);
+		this.workbook = Workbook.getWorkbook(inputStream);
 		this.writableWorkbook = Workbook.createWorkbook(outputFile, workbook);
 	}
 
@@ -83,7 +86,7 @@ public class StandingsFile
 	/**
 	 * Writes all the sheets (individuals and team)
 	 */
-	public void writeAllSheets() throws BiffException, IOException, WriteException
+	public void write() throws BiffException, IOException, WriteException
 	{
 		// Iterate over all the individual sheets (and the one team result sheet)
 		for (int i = 0; i < individualResultSheets.size(); i++)

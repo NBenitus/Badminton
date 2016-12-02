@@ -2,21 +2,22 @@ package standings;
 
 import java.util.ArrayList;
 
+import standings.StandingsCreationHelper.Category;
 import standings.StandingsCreationHelper.TypeOfPlay;
 
 public class Result
 {
-	private String name;
+	private String id;
 	private String schoolName;
-	private String category;
+	private Category category;
 	private TypeOfPlay typeOfPlay;
 	private ArrayList<Integer> scores;
 
 	/**
 	  * Constructor
 	  *
-	  * @param name
-	  *            name of the player
+	  * @param id
+	  *            id of the player
 	  * @param schoolName
 	  *            name of the school where the player competes
 	  * @param category
@@ -26,23 +27,23 @@ public class Result
 	  * @param scores
 	  *            list of scores for all the tournaments participated with the same category and type of play
 	  */
-	public Result(String name, String schoolName, String category, TypeOfPlay typeOfPlay, ArrayList<Integer> scores)
+	public Result(String id, String schoolName, Category category, TypeOfPlay typeOfPlay, ArrayList<Integer> scores)
 	{
-		this.name = name;
+		this.id = id;
 		this.schoolName = schoolName;
 		this.category = category;
 		this.typeOfPlay = typeOfPlay;
 		this.scores = scores;
 	}
 
-	public String getCategory()
+	public Category getCategory()
 	{
 		return category;
 	}
 
-	public String getName()
+	public String getID()
 	{
-		return name;
+		return id;
 	}
 
 	public String getSchoolName()
@@ -60,14 +61,14 @@ public class Result
 		return typeOfPlay;
 	}
 
-	public void setCategory(String category)
+	public void setCategory(Category category)
 	{
 		this.category = category;
 	}
 
-	public void setName(String name)
+	public void setID(String id)
 	{
-		this.name = name;
+		this.id = id;
 	}
 
 	public void setSchoolName(String schoolName)

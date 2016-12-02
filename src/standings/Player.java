@@ -5,6 +5,7 @@ import standings.StandingsCreationHelper.Gender;
 
 public class Player
 {
+	private String id;
 	private String name;
 	private String schoolName;
 	private Gender gender;
@@ -18,7 +19,7 @@ public class Player
 	  * @param schoolName
 	  *            name of the school where the player competes
 	  * @param gender
-	  *            gender of the tournament
+	  *            gender of the player
 	  */
 	public Player(String name, String schoolName, Gender gender)
 	{
@@ -28,12 +29,43 @@ public class Player
 		this.category = null;
 	}
 
-	public Player(String name, String schoolName, Gender gender, Category category)
+	/**
+	  * Constructor.
+	  *
+	  * @param id
+	  *            unique id of the player
+	  * @param playerName
+	  *            name of the player
+	  * @param schoolName
+	  *            name of the school where the player competes
+	  * @param gender
+	  *            gender of the player
+	  */
+	public Player(String id, String name, String schoolName, Gender gender, Category category)
 	{
 		this.name = name;
 		this.schoolName = schoolName;
 		this.gender = gender;
 		this.category = category;
+		this.id = id;
+	}
+
+	/**
+	  * Constructor.
+	  *
+	  * @param playerName
+	  *            name of the player
+	  * @param schoolName
+	  *            name of the school where the player competes
+	  * @param gender
+	  *            gender of the player
+	  */
+	public Player(String name, String schoolName, Gender gender, Category category)
+	{
+		this.name = name;
+		this.schoolName = schoolName;
+		this.gender = gender;
+		this.category = null;
 	}
 
 	public Category getCategory()
@@ -44,6 +76,11 @@ public class Player
 	public Gender getGender()
 	{
 		return gender;
+	}
+
+	public String getId()
+	{
+		return id;
 	}
 
 	public String getName()
@@ -64,6 +101,11 @@ public class Player
 	public void setGender(Gender gender)
 	{
 		this.gender = gender;
+	}
+
+	public void setId(String id)
+	{
+		this.id = id;
 	}
 
 	public void setName(String name)

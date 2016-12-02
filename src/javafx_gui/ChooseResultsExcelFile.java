@@ -14,6 +14,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import standings.ResultFile;
 import standings.StandingsCreationHelper;
 
 class ChooseResultsExcelFile extends WizardPage
@@ -70,7 +71,7 @@ class ChooseResultsExcelFile extends WizardPage
 						nextButton.setDisable(false);
 						resultsFileLabel.setText("Fichier sélectionné: " + file);
 
-						StandingsCreationHelper.setResultsFile(file);
+						StandingsCreationHelper.setResultFile(new ResultFile(file));
 					}
 
 					// The file provided is invalid, show error message

@@ -33,7 +33,10 @@ abstract class WizardPage extends VBox
 		Region spring = new Region();
 		VBox.setVgrow(spring, Priority.ALWAYS);
 
-		Image image = new Image("file:files/RSEQ_Logo.png");
+//		Image image = new Image("file:files/RSEQ_Logo.png");
+
+		Image image = new Image(WizardPage.class.getResourceAsStream("resources/RSEQ_Logo.png"));
+
         ImageView iv1 = new ImageView();
         iv1.setImage(image);
 
