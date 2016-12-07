@@ -56,6 +56,26 @@ public class Utilities
 		return Category.valueOf(categoryString);
 	}
 
+	public static Category getPreviousCategory(Category category)
+	{
+		Category nextCategory = null;
+
+		switch (category)
+		{
+		case BENJAMIN:
+			nextCategory = Category.BENJAMIN;
+			break;
+		case CADET:
+			nextCategory = Category.BENJAMIN;
+			break;
+		case JUVÉNILE:
+			nextCategory = Category.CADET;
+			break;
+		}
+
+		return nextCategory;
+	}
+
 	/**
 	 * Gets the school name from the S1 filenames
 	 *

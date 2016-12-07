@@ -102,6 +102,24 @@ public class POIExcelFileProcessor
 		return workbook;
 	}
 
+	/**
+	 * Creates the HSSF Workbook and other objects to write the excel file
+	 *
+	 * @param inputFileArg
+	 *            excel file to makes changes to
+	 */
+	public static HSSFWorkbook initialize(InputStream inputStreamArg, File outputFileArg)
+			throws FileNotFoundException, IOException
+	{
+		inputStream = inputStreamArg;
+		outputFile = outputFileArg;
+
+		// Create HSSF Workbook instance holding reference to .xls file
+		workbook = new HSSFWorkbook(inputStream);
+
+		return workbook;
+	}
+
 	public static void write()
 	{
 		try

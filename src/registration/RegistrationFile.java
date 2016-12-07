@@ -11,7 +11,7 @@ import utilities.Utilities;
 
 public class RegistrationFile
 {
-	// In progress
+//	 In progress
 //	public static void main(String[] args) throws Exception
 //	{
 ////		File file = new File("C:\\Benoit\\Work\\Java\\Badminton\\FormulairesEntrees_Tournoi3.xls");

@@ -19,7 +19,7 @@ class SurveyWizard extends Wizard
 	  */
 	public SurveyWizard(Stage owner)
 	{
-		super(new ChooseResultsExcelFile(owner), new ChooseStandingsExcelFile(owner));
+		super(new ChooseResultsFile(owner), new ChooseStandingsFile(owner));
 		this.owner = owner;
 	}
 

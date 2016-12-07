@@ -50,6 +50,19 @@ public class ResultFile
 	}
 
 	/**
+	 * Adds results to the database
+	 *
+	 * @param resultsFile
+	 *            xls file that contains the list of results
+	 * @throws Exception
+	 */
+	public void addResult() throws Exception
+	{
+		PostgreSQLJDBC.clearTable("Result");
+		PostgreSQLJDBC.addResult(read());
+	}
+
+	/**
 	 * Read a list of results from the xls file
 	 *
 	 * @param inputFile

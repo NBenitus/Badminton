@@ -1,12 +1,13 @@
 package pageBreak;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class PageBreak
 {
 	private String sheetName;
-	private ArrayList<Integer> columnPageBreaks;
-	private ArrayList<Integer> rowPageBreaks;
+	private List<Integer> columnPageBreaks;
+	private List<Integer> rowPageBreaks;
 
 	/**
 	  * Constructor.
@@ -18,7 +19,7 @@ public class PageBreak
 	  * @param columnPageBreaks
 	  *            list of columns which to add page breaks to
 	  */
-	public PageBreak(String sheetName, ArrayList<Integer> rowPageBreaks, ArrayList<Integer> columnPageBreaks)
+	public PageBreak(String sheetName, List<Integer> rowPageBreaks, List<Integer> columnPageBreaks)
 	{
 		this.sheetName = sheetName;
 		this.rowPageBreaks = rowPageBreaks;
@@ -60,12 +61,12 @@ public class PageBreak
 		rowPageBreaks.add(rowPageBreak);
 	}
 
-	public ArrayList<Integer> getColumnPageBreaks()
+	public List<Integer> getColumnPageBreaks()
 	{
 		return columnPageBreaks;
 	}
 
-	public ArrayList<Integer> getRowPageBreaks()
+	public List<Integer> getRowPageBreaks()
 	{
 		return rowPageBreaks;
 	}
@@ -75,12 +76,12 @@ public class PageBreak
 		return sheetName;
 	}
 
-	public void setColumnPageBreaks(ArrayList<Integer> columnPageBreaks)
+	public void setColumnPageBreaks(List<Integer> columnPageBreaks)
 	{
 		this.columnPageBreaks = columnPageBreaks;
 	}
 
-	public void setRowPageBreaks(ArrayList<Integer> rowPageBreaks)
+	public void setRowPageBreaks(List<Integer> rowPageBreaks)
 	{
 		this.rowPageBreaks = rowPageBreaks;
 	}

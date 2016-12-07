@@ -40,6 +40,8 @@ public class Player
 	  *            name of the school where the player competes
 	  * @param gender
 	  *            gender of the player
+	  * @param category
+	  *            category which the player participates in (ex: Benjamin, cadet or juvénile)
 	  */
 	public Player(String id, String name, String schoolName, Gender gender, Category category)
 	{
@@ -53,19 +55,21 @@ public class Player
 	/**
 	  * Constructor.
 	  *
-	  * @param playerName
+	  * @param name
 	  *            name of the player
 	  * @param schoolName
 	  *            name of the school where the player competes
 	  * @param gender
 	  *            gender of the player
+	  * @param category
+	  *            category which the player participates in (ex: Benjamin, cadet or juvénile)
 	  */
 	public Player(String name, String schoolName, Gender gender, Category category)
 	{
 		this.name = name;
 		this.schoolName = schoolName;
 		this.gender = gender;
-		this.category = null;
+		this.category = category;
 	}
 
 	public Category getCategory()

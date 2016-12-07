@@ -23,18 +23,23 @@ public class StandingsFile
 	/**
 	 * Constructor.
 	 *
-	 * @param templateFile
-	 *            file that contains the templates for the team and individual result sheets
+	 * @param inputStream
+	 *            input stream from the template file
 	 * @param outputFile
 	 *            file that will contain the created team and individual results
 	 */
-//	public StandingsFile(File templateFile, File outputFile)
 	public StandingsFile(InputStream inputStream, File outputFile)
 			throws BiffException, IOException, WriteException
 	{
-//		this.workbook = Workbook.getWorkbook(templateFile);
 		this.workbook = Workbook.getWorkbook(inputStream);
 		this.writableWorkbook = Workbook.createWorkbook(outputFile, workbook);
+
+		for (int i = 0; i < TypeOfPlay.values().length; i++)
+		{
+			this.addIndividualResultSheet(TypeOfPlay.values()[i].text(), TypeOfPlay.values()[i]);
+		}
+
+		this.setTeamResultSheet();
 	}
 
 	/**
@@ -56,6 +61,26 @@ public class StandingsFile
 		{
 			individualResultSheets.add(new IndividualCombinedResultSheet(this, typeOfPlay));
 		}
+	}
+
+	/**
+	 * Closes the instance of the StandingsFile and its open input and output streams
+	 *
+	 */
+	public void close() throws BiffException, IOException, WriteException
+	{
+		ExcelFileProcessor.writeAndClose(this.getWritableWorkbook(), this.getWorkbook());
+	}
+
+	/**
+	 * Deletes the template sheets in a StandingsFile
+	 *
+	 * @param standingsFile
+	 *            standingsFile which to delete template sheets from
+	 */
+	public void deleteTemplateSheet()
+	{
+		ExcelFileProcessor.deleteSheet(this.getWritableWorkbook(), IndividualResultSheet.TEMPLATESHEETNAME);
 	}
 
 	public ArrayList<IndividualResultSheet> getIndividualResultSheets()

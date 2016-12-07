@@ -17,7 +17,7 @@ import javafx.stage.Stage;
 import standings.ResultFile;
 import standings.StandingsCreationHelper;
 
-class ChooseResultsExcelFile extends WizardPage
+class ChooseResultsFile extends WizardPage
 {
 	private Stage stage;
 
@@ -27,7 +27,7 @@ class ChooseResultsExcelFile extends WizardPage
 	  * @param stageOwner
 	  *            stage object used to display the page
 	  */
-	public ChooseResultsExcelFile(Stage stageOwner)
+	public ChooseResultsFile(Stage stageOwner)
 	{
 		super("");
 		stage = stageOwner;
@@ -113,7 +113,8 @@ class ChooseResultsExcelFile extends WizardPage
 		fileChooser.setTitle("Excel files");
 
 		//Set initial directory
-		fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+		fileChooser.setInitialDirectory(
+				new File(System.getProperty("C:\\Users\\admin\\Desktop\\RSEQ\\2016-2017\\Sports\\Badminton\\Résultats\\")));
 
 		//Add the xls extension filter if it does not already exist
 		if (fileChooser.getExtensionFilters().size() == 0)

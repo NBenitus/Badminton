@@ -16,7 +16,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import standings.StandingsCreationHelper;
 
-class ChooseStandingsExcelFile extends WizardPage
+class ChooseStandingsFile extends WizardPage
 {
 	private Stage stage;
 
@@ -26,7 +26,7 @@ class ChooseStandingsExcelFile extends WizardPage
 	  * @param stageOwner
 	  *            stage object used to display the page
 	  */
-	public ChooseStandingsExcelFile(Stage stageOwner)
+	public ChooseStandingsFile(Stage stageOwner)
 	{
 		super("");
 		stage = stageOwner;
@@ -61,6 +61,9 @@ class ChooseStandingsExcelFile extends WizardPage
 				// Add the XLS extension as the only type the file can be saved
 				FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("XLS files (*.xls)", "*.xls");
 				fileChooser.getExtensionFilters().add(extFilter);
+				fileChooser.setInitialDirectory(
+						new File(System.getProperty("C:\\Users\\admin\\Desktop\\RSEQ\\2016-2017\\Sports\\Badminton\\Résultats\\")));
+
 				File file = fileChooser.showSaveDialog(stage);
 
 				if (file != null)

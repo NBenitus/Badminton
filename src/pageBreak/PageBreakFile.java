@@ -3,6 +3,7 @@ package pageBreak;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import excelHelper.POIExcelFileProcessor;
 import jxl.read.biff.BiffException;
@@ -23,7 +24,9 @@ public class PageBreakFile
 	 * @param file
 	 *            excel file to be modified
 	 * @param individualResultSheets
-	 *            list of individual sheets in the excel file
+	 *            list of individual sheets to set page breaks for
+	 * @param teamResultSheet
+	 *            team result sheet to set page breaks for
 	 */
 	public PageBreakFile(File file, ArrayList<IndividualResultSheet> listIndividualResultSheets, TeamResultSheet teamResultSheet)
 			throws BiffException, IOException, WriteException
@@ -34,8 +37,7 @@ public class PageBreakFile
 	}
 
 	/**
-	 * Add column page breaks to each individual result sheet
-	 *
+	 * Writes the page break file by adding page breaks to the sheets
 	 */
 	public void write() throws IOException
 	{
@@ -60,10 +62,7 @@ public class PageBreakFile
 			pageBreaks.add(individualResultPageBreak);
 		}
 
-		ArrayList<Integer> rowPageBreak = new ArrayList<Integer>();
-		rowPageBreak.add(teamResultSheet.getRowPageBreak());
-
-		pageBreaks.add(new PageBreak(teamResultSheet.getName(), rowPageBreak, null));
+		pageBreaks.add(new PageBreak(teamResultSheet.getName(), Collections.singletonList(teamResultSheet.getRowPageBreak()), null));
 
 		POIExcelFileProcessor.addPageBreaks(pageBreaks);
 

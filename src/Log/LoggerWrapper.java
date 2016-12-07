@@ -1,4 +1,4 @@
-package Log;
+package log;
 import java.io.IOException;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;

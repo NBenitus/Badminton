@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
-import Log.LoggerWrapper;
+import log.LoggerWrapper;
 import standings.StandingsCreationHelper.Category;
 import standings.StandingsCreationHelper.Gender;
 import standings.StandingsCreationHelper.TypeOfPlay;
@@ -16,6 +16,7 @@ import standings.StandingsCreationHelper.TypeOfResult;
 import standings.Result;
 import standings.TeamResult;
 import standings.TeamResultSheet;
+import utilities.Utilities;
 import standings.IndividualCombinedResult;
 import standings.IndividualResult;
 import standings.Player;
@@ -107,7 +108,6 @@ public class PostgreSQLJDBC
 	 * @param listPlayers
 	 *            list of Results from the XLS file
 	 */
-	@SuppressWarnings("resource")
 	public static void addResult(ArrayList<Result> listResults)
 	{
 		try
@@ -148,7 +148,7 @@ public class PostgreSQLJDBC
 	/**
 	 * Deletes entries for the Result and Player databases
 	 */
-	public static void clearDatabase()
+	public static void clearTable(String tableName)
 	{
 		openDatabase();
 
@@ -156,7 +156,7 @@ public class PostgreSQLJDBC
 
 		try
 		{
-			stm = connection.prepareStatement("DELETE FROM Result;");
+			stm = connection.prepareStatement("DELETE FROM " + tableName + ";");
 			stm.execute();
 
 			stm.close();
@@ -396,6 +396,46 @@ public class PostgreSQLJDBC
 	 *
 	 * @return number of pools
 	 */
+	public static ArrayList<String> getPlayersBySchool(String schoolName, Category category, Gender gender)
+	{
+		ArrayList<String> listPlayersNames = new ArrayList<String>();
+
+		try
+		{
+			openDatabase();
+
+			PreparedStatement stm = connection.prepareStatement("SELECT Name FROM Player "
+					+ "WHERE SchoolName=? AND (Category=? OR Category=?) AND Gender=?");
+
+			stm.setString(1, schoolName);
+			stm.setString(2, category.text());
+			stm.setString(3, Utilities.getPreviousCategory(category).text());
+			stm.setString(4, gender.text());
+			ResultSet resultSet = stm.executeQuery();
+
+			while (resultSet.next())
+			{
+				listPlayersNames.add(resultSet.getString("Name"));
+			}
+
+			closeDatabase(stm, resultSet);
+		}
+
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			LoggerWrapper.myLogger.severe(e.toString());
+			System.exit(0);
+		}
+
+		return listPlayersNames;
+	}
+
+	/**
+	 * Gets the list of all subscribed players
+	 *
+	 * @return number of pools
+	 */
 	public static ArrayList<Player> getAllPlayers()
 	{
 		ArrayList<Player> listPlayers = new ArrayList<Player>();
@@ -427,6 +467,41 @@ public class PostgreSQLJDBC
 		}
 
 		return listPlayers;
+	}
+
+	/**
+	 * Gets the list of all schools
+	 *
+	 * @return number of pools
+	 */
+	public static ArrayList<String> getAllSchools()
+	{
+		ArrayList<String> listSchoolNames = new ArrayList<String>();
+
+		try
+		{
+			openDatabase();
+
+			PreparedStatement stm = connection.prepareStatement("SELECT Name FROM School");
+
+			ResultSet resultSet = stm.executeQuery();
+
+			while (resultSet.next())
+			{
+				listSchoolNames.add(resultSet.getString("Name"));
+			}
+
+			closeDatabase(stm, resultSet);
+		}
+
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			LoggerWrapper.myLogger.severe(e.toString());
+			System.exit(0);
+		}
+
+		return listSchoolNames;
 	}
 
 	/**
