@@ -3,17 +3,13 @@ package standings;
 import java.io.File;
 import java.util.ArrayList;
 
-import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFRow;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 
 import database.PostgreSQLJDBC;
-import excelHelper.ExcelFileReader;
 import excelHelper.POIExcelFileProcessor;
-import jxl.Cell;
-import jxl.Sheet;
-import jxl.Workbook;
 import standings.StandingsCreationHelper.Category;
 import standings.StandingsCreationHelper.TypeOfPlay;
 
@@ -23,26 +19,47 @@ public class ResultFile
 	private static final String SHEET_NAME = "Données Joueurs";
 
 	private static final int FIRST_ROW = 1;
-	private static final int FIRST_COLUMN = 0;
-	private static final int LAST_COLUMN_WRITE = 5;
-	private static final int LAST_COLUMN_READ = 10;
-	private static final int ID_COLUMN = 0;
-	private static final int PLAYER_NAME_COLUMN = 1;
-	private static final int SCHOOL_NAME_COLUMN = 2;
-	private static final int CATEGORY_COLUMN = 3;
-	private static final int GENDER_COLUMN = 4;
-	private static final int TYPE_OF_PLAY_COLUMN = 5;
-	private static final int FIRST_TOURNAMENT_COLUMN = 6;
+
+	public enum Column {
+		ID(0), PLAYER_NAME(1), SCHOOL_NAME(2), CATEGORY(3), GENDER(4), TYPE_OF_PLAY(5), FIRST_TOURNAMENT(6),
+		SECOND_TOURNAMENT(7), THIRD_TOURNAMENT(8), FOURTH_TOURNAMENT(9), FIFTH_TOURNAMENT(10);
+
+		private int number;
+
+		Column(int number)
+		{
+			this.number = number;
+		}
+
+		public int number()
+		{
+			return number;
+		}
+	}
 
 	private File inputFile;
 	private File outputFile;
 
+	/**
+	 * Constructor.
+	 *
+	 * @param inputFile
+	 *            file that contains the results
+	 * @param outputFile
+	 *            file that will contain the pre-filled results file without scores
+	 */
 	public ResultFile(File inputFile, File outputFile)
 	{
 		this.inputFile = inputFile;
 		this.outputFile = outputFile;
 	}
 
+	/**
+	 * Constructor.
+	 *
+	 * @param inputFile
+	 *            file that contains the results
+	 */
 	public ResultFile(File inputFile)
 	{
 		this.inputFile = inputFile;
@@ -52,29 +69,20 @@ public class ResultFile
 	/**
 	 * Adds results to the database
 	 *
-	 * @param resultsFile
-	 *            xls file that contains the list of results
 	 * @throws Exception
 	 */
-	public void addResult() throws Exception
+	public void addResult()
 	{
 		PostgreSQLJDBC.clearTable("Result");
 		PostgreSQLJDBC.addResult(read());
 	}
 
 	/**
-	 * Read a list of results from the xls file
-	 *
-	 * @param inputFile
-	 *            xls file to be read
-	 * @param sheetName
-	 *            name of the sheet that contains the list of results
-	 * @return list of results
-	 * @throws Exception
+	 * Read the contents of the results file
 	 */
-	public ArrayList<Result> read() throws Exception
+	public ArrayList<Result> read()
 	{
-		Workbook workbook = ExcelFileReader.initialize(inputFile);
+		Workbook workbook = POIExcelFileProcessor.createWorkbook(inputFile);
 
 		Sheet sheet = workbook.getSheet(SHEET_NAME);
 		ArrayList<Result> listResults = new ArrayList<Result>();
@@ -84,139 +92,157 @@ public class ResultFile
 		Category category = null;
 		TypeOfPlay typeOfPlay = TypeOfPlay.SIMPLE; // Initializing variable
 
-		Cell[] row = null;
+		Row row = null;
 
 		// Iterate over the number of rows in the sheet.
-		for (int i = LIST_RESULTS_FIRST_ROW; i < sheet.getRows(); i++)
+		for (int i = LIST_RESULTS_FIRST_ROW; i <= sheet.getLastRowNum(); i++)
 		{
 			ArrayList<Integer> scores = new ArrayList<Integer>();
 			row = sheet.getRow(i);
 
-			if (row.length > 0)
+			if (row != null)
 			{
 				// Read alls cells for each row. Stopping at the 10th column since there are only empty fields after
-				for (int j = 0; j <= LAST_COLUMN_READ; j++)
+				for (int j = 0; j < Column.values().length; j++)
 				{
-					// If the line number of the row is empty, skip to the end of the file
-					if (row[0].getContents().isEmpty())
-					{
-						i = sheet.getRows();
-						break;
-					}
-
-					switch (j)
+					switch (Column.values()[j])
 					{
 
 					// Add the corresponding values to the result object
-					case ID_COLUMN:
-						id = row[j].getContents();
-						break;
-					case SCHOOL_NAME_COLUMN:
-						schoolName = row[j].getContents();
-						break;
-					case CATEGORY_COLUMN:
-						category = Category.valueOf(row[j].getContents().toUpperCase());
-						break;
-					case TYPE_OF_PLAY_COLUMN:
-						typeOfPlay = TypeOfPlay.valueOf(row[j].getContents().toUpperCase());
-						break;
-					case FIRST_TOURNAMENT_COLUMN:
-					case FIRST_TOURNAMENT_COLUMN + 1:
-					case FIRST_TOURNAMENT_COLUMN + 2:
-					case FIRST_TOURNAMENT_COLUMN + 3:
-					case FIRST_TOURNAMENT_COLUMN + 4:
+					case ID:
 
-						// JXL seems to change the number of cells in a row if subsequent values are empty
-						if (j >= row.length)
+						id = POIExcelFileProcessor.getCellContents(row.getCell(j));
+
+						break;
+
+					case PLAYER_NAME:
+
+						// Do nothing
+						break;
+
+					case GENDER:
+
+						// Do nothing
+						break;
+
+					case SCHOOL_NAME:
+
+						schoolName = POIExcelFileProcessor.getCellContents(row.getCell(j));
+
+						break;
+
+					case CATEGORY:
+
+						category = Category
+								.valueOf(POIExcelFileProcessor.getCellContents(row.getCell(j)).toUpperCase());
+
+						break;
+
+					case TYPE_OF_PLAY:
+
+						typeOfPlay = TypeOfPlay
+								.valueOf(POIExcelFileProcessor.getCellContents(row.getCell(j)).toUpperCase());
+
+						break;
+
+					case FIRST_TOURNAMENT:
+					case SECOND_TOURNAMENT:
+					case THIRD_TOURNAMENT:
+					case FOURTH_TOURNAMENT:
+					case FIFTH_TOURNAMENT:
+
+						if (POIExcelFileProcessor.getCellContents(row.getCell(j)).equals(""))
 						{
 							scores.add(0);
 						}
 						else
 						{
-							if ((row[j].getContents().equals("")))
-							{
-								scores.add(0);
-							}
-							else
-							{
-								scores.add(Integer.parseInt(row[j].getContents()));
-							}
+							scores.add(Integer.parseInt(POIExcelFileProcessor.getCellContents(row.getCell(j))));
 						}
+
 						break;
 					}
 				}
 
 			}
 
-			// Add the result if the file is not at the last empty row
-			if (i != sheet.getRows())
-			{
-				listResults.add(new Result(id, schoolName, category, typeOfPlay, scores));
-			}
+			listResults.add(new Result(id, schoolName, category, typeOfPlay, scores));
 		}
 
-		ExcelFileReader.close();
+		POIExcelFileProcessor.closeWorkbook(workbook);
 
 		return listResults;
 	}
 
+	/**
+	 * Writes the pre-filled columns to the results file
+	 */
 	public void write()
 	{
 		ArrayList<Player> listPlayers = PostgreSQLJDBC.getAllPlayers();
 
-		try
+		Workbook workbook = POIExcelFileProcessor.createWorkbook(inputFile);
+
+		Sheet sheet = workbook.getSheet(SHEET_NAME);
+
+		// Iterate over both types of play
+		for (int k = 0; k < TypeOfPlay.values().length; k++)
 		{
-			HSSFWorkbook workbook = POIExcelFileProcessor.initialize(inputFile, outputFile);
-			HSSFSheet sheet = workbook.getSheet(SHEET_NAME);
-
-			for (int k = 0; k < 2; k++)
+			for (int i = 0; i < listPlayers.size(); i++)
 			{
-				for (int i = 0; i < listPlayers.size(); i++)
+				Row row = sheet.createRow((short) (i * 2) + k + FIRST_ROW);
+
+				// Iterate over each column where cells will be written
+				for (int j = 0; j <= Column.values().length; j++)
 				{
-					HSSFRow row = sheet.createRow((short) (i * 2) + k + FIRST_ROW);
+					Cell cell = row.createCell((short) j);
 
-					for (int j = FIRST_COLUMN; j <= LAST_COLUMN_WRITE; j++)
+					switch (Column.values()[j])
 					{
-						HSSFCell cell = row.createCell((short) j);
 
-						switch (j)
-						{
-						case ID_COLUMN:
-							cell.setCellValue(listPlayers.get(i).getId());
-							break;
-						case PLAYER_NAME_COLUMN:
-							cell.setCellValue(listPlayers.get(i).getName());
-							break;
-						case SCHOOL_NAME_COLUMN:
-							cell.setCellValue(listPlayers.get(i).getSchoolName());
-							break;
-						case CATEGORY_COLUMN:
-							cell.setCellValue(listPlayers.get(i).getCategory().text());
-							break;
-						case GENDER_COLUMN:
-							cell.setCellValue(listPlayers.get(i).getGender().text());
-							break;
-						case TYPE_OF_PLAY_COLUMN:
-							if (k == 0)
-							{
-								cell.setCellValue(TypeOfPlay.SIMPLE.text());
-							}
-							else if (k == 1)
-							{
-								cell.setCellValue(TypeOfPlay.DOUBLE.text());
-							}
-							break;
-						}
+					case ID:
+
+						cell.setCellValue(listPlayers.get(i).getId());
+						break;
+
+					case PLAYER_NAME:
+
+						cell.setCellValue(listPlayers.get(i).getName());
+						break;
+
+					case SCHOOL_NAME:
+
+						cell.setCellValue(listPlayers.get(i).getSchoolName());
+						break;
+
+					case CATEGORY:
+
+						cell.setCellValue(listPlayers.get(i).getCategory().text());
+						break;
+
+					case GENDER:
+
+						cell.setCellValue(listPlayers.get(i).getGender().text());
+						break;
+
+					case TYPE_OF_PLAY:
+
+						cell.setCellValue(TypeOfPlay.values()[k].text());
+						break;
+
+					case FIRST_TOURNAMENT:
+					case SECOND_TOURNAMENT:
+					case THIRD_TOURNAMENT:
+					case FOURTH_TOURNAMENT:
+					case FIFTH_TOURNAMENT:
+
+						// Do nothing
+						break;
 					}
 				}
 			}
+		}
 
-			POIExcelFileProcessor.write();
-			POIExcelFileProcessor.close();
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+		POIExcelFileProcessor.writeWorkbook(workbook, outputFile);
 	}
 }

@@ -1,40 +1,27 @@
 package standings;
 
-
-public class TeamResultSheet
+public class TeamResultSheet extends ResultSheet
 {
-	private String name;
+	public static final String TEMPLATE_SHEET_NAME = "Classement_Équipes";
 
-	public int rowPageBreak;
+	public static final int FIRST_ROW = 6;
+	public static final int FIRST_COLUMN = 0;
+	public static final int NUMBER_ROWS_BETWEEN_TYPES_OF_RESULTS = 3;
+	public static final int NUMBER_TOURNAMENTS = 5;
+	public static final int NUMBER_COLUMNS = 8;
 
-	public static final String TEMPLATETEAMSHEETPREFIX = "Classement_Équipes";
-
-	public static final int FIRSTROW = 6;
-	public static final int FIRSTCOLUMN = 0;
-	public static final int NUMBEROFROWSBETWEENTYPESOFRESULTS = 3;
-	public static final int NUMBEROFTOURNAMENTS = 5;
-	public static final int NUMBEROFCOLUMNSTOTAL = 8;
-
-	/**
-	  * Constructor.
-	  */
-	public TeamResultSheet()
+	public int getFirstColumn()
 	{
-		name = TEMPLATETEAMSHEETPREFIX;
+		return FIRST_COLUMN;
 	}
 
-	public String getName()
+	public int getNumberOfColumns()
 	{
-		return name;
+		return NUMBER_COLUMNS;
 	}
 
-	public int getRowPageBreak()
+	public String getTemplateSheetName()
 	{
-		return rowPageBreak;
-	}
-
-	public void setRowPageBreak(int row)
-	{
-		rowPageBreak = row;
+		return TEMPLATE_SHEET_NAME;
 	}
 }

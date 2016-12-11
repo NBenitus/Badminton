@@ -1,132 +1,206 @@
 package excelHelper;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import pageBreak.PageBreak;
+import org.apache.poi.EncryptedDocumentException;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 public class POIExcelFileProcessor
 {
-	private static File inputFile;
-	private static File outputFile;
+	/**
+	 * Creates a cell at the specified location.
+	 *
+	 * @param sheet
+	 *            sheet that contains the cell to be created
+	 * @param columnNumber
+	 *            number of the column where the cell is situated
+	 * @param rowNumber
+	 *            number of the row where the cell is situated
+	 * @param value
+	 *            value of the cell to be created
+	 */
+	public static void createCell(Sheet sheet, int columnNumber, int rowNumber, String value)
+	{
+		Row row = sheet.getRow(rowNumber);
 
-	private static HSSFWorkbook workbook;
+		// Create the row at the specified location is null
+		if (row == null)
+		{
+			row = sheet.createRow(rowNumber);
+		}
 
-	private static FileOutputStream fileOut;
-	private static InputStream inputStream;
+		Cell cell = sheet.getRow(rowNumber).getCell(columnNumber);
+
+		// Create the cell at the specified location is null
+		if (cell == null)
+		{
+			cell = sheet.getRow(rowNumber).createCell(columnNumber);
+		}
+
+		cell.setCellValue(value);
+	}
 
 	/**
-	 * Adds page breaks (columns and rows) to a sheet
+	 * Creates a cell at the specified location.
 	 *
-	 * @param pageBreaks
-	 *            list of page breaks objects that contain the name of the sheet, as well as the column and row page
-	 *            breaks
+	 * @param sheet
+	 *            sheet that contains the cell to be created
+	 * @param columnNumber
+	 *            number of the column where the cell is situated
+	 * @param rowNumber
+	 *            number of the row where the cell is situated
+	 * @param value
+	 *            value of the cell to be created
+	 * @param cellStyle
+	 *            style to be applied to the cell
 	 */
-	public static void addPageBreaks(ArrayList<PageBreak> pageBreaks)
+	public static void createCell(Sheet sheet, int columnNumber, int rowNumber, String value, CellStyle cellStyle)
+	{
+		Row row = sheet.getRow(rowNumber);
+
+		// Create the row at the specified location is null
+		if (row == null)
+		{
+			row = sheet.createRow(rowNumber);
+		}
+
+		// Create the cell at the specified location is null
+		Cell cell = sheet.getRow(rowNumber).getCell(columnNumber);
+
+		if (cell == null)
+		{
+			cell = sheet.getRow(rowNumber).createCell(columnNumber);
+		}
+
+		// Apply the cell style to the cell
+		cell.setCellValue(value);
+		cell.setCellStyle(cellStyle);
+	}
+
+	/**
+	 * Creates the workbook object to be used for the Excel file operations
+	 *
+	 * @param inputFile
+	 *            corresponding Excel File to perform read or write operations on
+	 * @return	workbook object created from the input file
+	 */
+	public static Workbook createWorkbook(File inputFile)
+	{
+		Workbook workbook = null;
+
+		try
+		{
+			workbook = WorkbookFactory.create(inputFile);
+		}
+		catch (EncryptedDocumentException e)
+		{
+			e.printStackTrace();
+		}
+		catch (InvalidFormatException e)
+		{
+			e.printStackTrace();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+
+		return workbook;
+	}
+
+	/**
+	 * Creates the workbook object to be used for the Excel file operations
+	 *
+	 * @param inputStream
+	 *            corresponding input stream linked to an Excel File (usually a template file) to perform read or write
+	 *            operations on
+	 * @return	workbook object created from the input stream
+	 */
+	public static Workbook createWorkbook(InputStream inputStream)
+	{
+		Workbook workbook = null;
+
+		try
+		{
+			workbook = WorkbookFactory.create(inputStream);
+		}
+		catch (EncryptedDocumentException e)
+		{
+			e.printStackTrace();
+		}
+		catch (InvalidFormatException e)
+		{
+			e.printStackTrace();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+
+		return workbook;
+	}
+
+	/**
+	 * Closes the workbook object that was used for the Excel file operations
+	 * Usually called after read operations
+	 *
+	 * @param workbook
+	 *            workbook object used for Excel file operations
+	 */
+	public static void closeWorkbook(Workbook workbook)
 	{
 		try
 		{
-			// Iterate for each page break object
-			for (int i = 0; i < pageBreaks.size(); i++)
-			{
-				// Get sheet from page break object
-				HSSFSheet sheet = workbook.getSheet(pageBreaks.get(i).getSheetName());
-
-				// Line needed to set the page breaks in the page
-				sheet.setAutobreaks(false);
-
-				// Iterate over all the row page breaks
-				if (pageBreaks.get(i).getRowPageBreaks() != null)
-				{
-					for (int j = 0; j < pageBreaks.get(i).getRowPageBreaks().size(); j++)
-					{
-						sheet.setRowBreak(pageBreaks.get(i).getRowPageBreaks().get(j));
-					}
-				}
-
-				// Iterate over all the column page breaks
-				if (pageBreaks.get(i).getColumnPageBreaks() != null)
-				{
-					for (int j = 0; j < pageBreaks.get(i).getColumnPageBreaks().size(); j++)
-					{
-						sheet.setColumnBreak(pageBreaks.get(i).getColumnPageBreaks().get(j));
-					}
-				}
-			}
-
-			write();
+			workbook.close();
 		}
-		catch (Exception e)
+		catch (IOException e)
 		{
 			e.printStackTrace();
 		}
 	}
 
 	/**
-	 * Closes the objects used for the Excel file
+	 * Gets the content of a cell as a string, regardless of the type of the cell (number, date, etc.)
+	 *
+	 * @param cell
+	 *            cell to get the content from
+	 * @return string that contains the content of the cell
 	 */
-	public static void close() throws IOException
+	public static String getCellContents(Cell cell)
 	{
-		workbook.close();
+		DataFormatter df = new DataFormatter();
 
-		inputStream.close();
-
-		fileOut.flush();
-		fileOut.close();
+		return df.formatCellValue(cell);
 	}
 
 	/**
-	 * Creates the HSSF Workbook and other objects to write the excel file
+	 * Writes to file the workbook object that was used for the Excel file operations
 	 *
-	 * @param inputFileArg
-	 *            excel file to makes changes to
+	 * @param workbook
+	 *            workbook object used for Excel file operations
+	 * @param outputFile
+	 *            file created on disk that contains the result of the Excel file operations
 	 */
-	public static HSSFWorkbook initialize(File inputFileArg, File outputFileArg)
-			throws FileNotFoundException, IOException
-	{
-		inputFile = inputFileArg;
-		outputFile = outputFileArg;
-
-		inputStream = new FileInputStream(inputFile);
-
-		// Create HSSF Workbook instance holding reference to .xls file
-		workbook = new HSSFWorkbook(inputStream);
-
-		return workbook;
-	}
-
-	/**
-	 * Creates the HSSF Workbook and other objects to write the excel file
-	 *
-	 * @param inputFileArg
-	 *            excel file to makes changes to
-	 */
-	public static HSSFWorkbook initialize(InputStream inputStreamArg, File outputFileArg)
-			throws FileNotFoundException, IOException
-	{
-		inputStream = inputStreamArg;
-		outputFile = outputFileArg;
-
-		// Create HSSF Workbook instance holding reference to .xls file
-		workbook = new HSSFWorkbook(inputStream);
-
-		return workbook;
-	}
-
-	public static void write()
+	public static void writeWorkbook(Workbook workbook, File outputFile)
 	{
 		try
 		{
-			fileOut = new FileOutputStream(outputFile);
-
+			FileOutputStream fileOut = new FileOutputStream(outputFile);
 			workbook.write(fileOut);
+
+			fileOut.flush();
+			fileOut.close();
+			workbook.close();
 		}
 		catch (Exception e)
 		{

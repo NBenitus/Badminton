@@ -4,8 +4,8 @@ import standings.StandingsCreationHelper.TypeOfPlay;
 
 public class IndividualCombinedResultSheet extends IndividualResultSheet
 {
-	private static final String TEMPLATESHEETNAME = "Classement_Individuel_Combiné";
-	public static final int NUMBERCOLUMNSFORSTANDINGS = 6;
+	private static final String TEMPLATE_SHEET_NAME = "Classement_Individuel_Combiné";
+	public static final int NUMBER_OF_COLUMNS = 6;
 
 	/**
 	  * Constructor.
@@ -22,11 +22,11 @@ public class IndividualCombinedResultSheet extends IndividualResultSheet
 
 	public String getTemplateSheetName()
 	{
-		return TEMPLATESHEETNAME;
+		return TEMPLATE_SHEET_NAME;
 	}
 
-	public int getNumberOfColumnsForStandings()
+	public int getNumberOfColumns()
 	{
-		return NUMBERCOLUMNSFORSTANDINGS;
+		return NUMBER_OF_COLUMNS;
 	}
 }

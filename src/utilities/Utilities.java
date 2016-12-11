@@ -94,7 +94,7 @@ public class Utilities
 	/**
 	 * Gets the school name from a string in the registration form
 	 *
-	 * @param file
+	 * @param outputFile
 	 *            file that contains the list of registered players for each school
 	 * @return school name associated to the registration form
 	 */

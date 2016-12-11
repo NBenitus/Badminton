@@ -2,24 +2,10 @@ package standings;
 
 import java.awt.Desktop;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.logging.FileHandler;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
-
-import org.apache.poi.util.IOUtils;
 
 import compare.CompareFile;
 import database.PostgreSQLJDBC;
-import excelHelper.ExcelFileProcessor;
-import jxl.read.biff.BiffException;
-import jxl.write.WriteException;
-import log.LoggerWrapper;
-import pageBreak.PageBreakFile;
 import registration.FormFile;
 
 public class StandingsCreationHelper
@@ -86,7 +72,7 @@ public class StandingsCreationHelper
 		BENJAMIN_FEMININ(Category.BENJAMIN, Gender.FÉMININ), CADET_FEMININ(Category.CADET,
 				Gender.FÉMININ), JUVENIL_FEMININ(Category.JUVÉNILE, Gender.FÉMININ), BENJAMIN_MASCULIN(
 						Category.BENJAMIN, Gender.MASCULIN), CADET_MASCULIN(Category.CADET,
-								Gender.MASCULIN), JUVENIL_MASCULIN(Category.JUVÉNILE, Gender.MASCULIN);
+								Gender.MASCULIN), JUVÉNILE_MASCULIN(Category.JUVÉNILE, Gender.MASCULIN);
 
 		private Category category;
 		private Gender gender;
@@ -111,12 +97,13 @@ public class StandingsCreationHelper
 	/**
 	 * Adds players to the database
 	 *
-	 * @param playersFile
-	 *            xls file that contains the list of players
+	 * @param s1File
+	 *            S1 file that contains the list of players
 	 * @throws Exception
 	 */
 	public static void addPlayers(S1File s1File) throws Exception
 	{
+		PostgreSQLJDBC.clearTable("Result");
 		PostgreSQLJDBC.clearTable("Player");
 		PostgreSQLJDBC.addPlayer(s1File.read());
 	}
@@ -126,19 +113,11 @@ public class StandingsCreationHelper
 	 */
 	public static void createStandingsFile() throws Exception
 	{
+		resultFile.addResult();
+
 		standingsExcelFile = new StandingsFile(StandingsCreationHelper.class.getResourceAsStream(TEMPLATE_FILENAME),
 				outputFile);
-
-		resultFile.addResult();
 		standingsExcelFile.write();
-
-		standingsExcelFile.deleteTemplateSheet();
-		standingsExcelFile.close();
-
-		PageBreakFile pageBreakFile = new PageBreakFile(outputFile, standingsExcelFile.getIndividualResultSheets(),
-				standingsExcelFile.getTeamResultSheet());
-
-		pageBreakFile.write();
 
 		try
 		{
@@ -168,10 +147,10 @@ public class StandingsCreationHelper
 		resultFile = new ResultFile(new File("C:\\Benoit\\Work\\Java\\Badminton\\Liste_Résultats_Complet.xls"));
 		outputFile = new File("C:\\Benoit\\Work\\Java\\Badminton\\Résultats.xls");
 
-		// addPlayers(s1File);
-		// createStandingsFile();
-		testFormsFile();
-		// testCompareFiles();
+//		addPlayers(s1File);
+		createStandingsFile();
+//		testFormsFile();
+//		testCompareFiles();
 	}
 
 	public static void setResultFile(ResultFile resultFile)
@@ -186,10 +165,21 @@ public class StandingsCreationHelper
 
 	public static void testCompareFiles() throws Exception
 	{
-		File excelOne = new File("C:\\Benoit\\Work\\Java\\Badminton\\Résultats.xls");
-		File excelTwo = new File("C:\\Benoit\\Work\\Java\\Badminton\\Résultats_MisAJour.xls");
+		File excelOne = new File("C:\\Benoit\\Work\\Java\\Badminton\\Résultats_Test1.xls");
+		File excelTwo = new File("C:\\Benoit\\Work\\Java\\Badminton\\Résultats_Test2.xls");
 		File excelThree = new File("C:\\Benoit\\Work\\Java\\Badminton\\Compare_Test.xls");
 		CompareFile compareFile = new CompareFile(excelOne, excelTwo, excelThree);
+		compareFile.compare();
+
+		try
+		{
+			Desktop dt = Desktop.getDesktop();
+			dt.open(excelThree);
+		}
+		catch (Exception ex)
+		{
+			System.out.println(ex.getClass().getName() + ": " + ex.getMessage());
+		}
 	}
 
 	public static void testCreationResultsFile()

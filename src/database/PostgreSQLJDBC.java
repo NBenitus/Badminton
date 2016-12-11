@@ -25,7 +25,6 @@ public class PostgreSQLJDBC
 {
 	private static LoggerWrapper loggerWrapper = LoggerWrapper.getInstance();
 	private static Connection connection;
-	private static Statement statement;
 
 	/**
 	 * Adds a list of players to the database
@@ -51,6 +50,8 @@ public class PostgreSQLJDBC
 				stm.setString(4, listPlayers.get(i).getGender().text());
 				stm.setString(5, listPlayers.get(i).getCategory().text());
 				stm.executeUpdate();
+
+				stm.close();
 			}
 
 			closeDatabase();
@@ -90,6 +91,7 @@ public class PostgreSQLJDBC
 				stm.setBoolean(6, false);
 
 				stm.executeUpdate();
+				stm.close();
 			}
 
 			closeDatabase();
@@ -118,7 +120,7 @@ public class PostgreSQLJDBC
 			for (int i = 0; i < listResults.size(); i++)
 			{
 				// Add a result entry (name, schoolName, score) for each tournament
-				for (int j = 1; j <= TeamResultSheet.NUMBEROFTOURNAMENTS; j++)
+				for (int j = 1; j <= TeamResultSheet.NUMBER_TOURNAMENTS; j++)
 				{
 					PreparedStatement stm = connection.prepareStatement(
 							"INSERT INTO Result (PlayerID_fkey, SchoolName_fkey, Category, TypeOfPlay, "
@@ -132,6 +134,7 @@ public class PostgreSQLJDBC
 					stm.setInt(6, listResults.get(i).getScores().get(j - 1));
 
 					stm.executeUpdate();
+					stm.close();
 				}
 			}
 
@@ -146,20 +149,22 @@ public class PostgreSQLJDBC
 	}
 
 	/**
-	 * Deletes entries for the Result and Player databases
+	 * Deletes entries for the specified table in the database
 	 */
 	public static void clearTable(String tableName)
 	{
-		openDatabase();
-
 		PreparedStatement stm;
 
 		try
 		{
+			openDatabase();
+
 			stm = connection.prepareStatement("DELETE FROM " + tableName + ";");
 			stm.execute();
 
 			stm.close();
+
+			closeDatabase();
 		}
 		catch (SQLException e)
 		{
@@ -188,53 +193,6 @@ public class PostgreSQLJDBC
 	}
 
 	/**
-	 * Closes the database
-	 *
-	 * @param statement
-	 *            statement object used to run a sql query
-	 * @param resultSet
-	 *            result set used to query the database, which needs to be closed
-	 */
-	public static void closeDatabase(Statement statement, ResultSet resultSet)
-	{
-		try
-		{
-			resultSet.close();
-			statement.close();
-			connection.close();
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-			LoggerWrapper.myLogger.severe(e.toString());
-			System.exit(0);
-		}
-		System.out.println("Database closed successfully");
-	}
-
-	/**
-	 * Closes the database
-	 *
-	 * @param resultSet
-	 *            result set used to query the database, which needs to be closed
-	 */
-	public static void closeDatabase(ResultSet resultSet)
-	{
-		try
-		{
-			resultSet.close();
-			connection.close();
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-			LoggerWrapper.myLogger.severe(e.toString());
-			System.exit(0);
-		}
-		System.out.println("Database closed successfully");
-	}
-
-	/**
 	 * Get a list of individual Result based on the type of result needed
 	 *
 	 * @param typeOfResult
@@ -250,12 +208,14 @@ public class PostgreSQLJDBC
 		try
 		{
 			ResultSet resultSet;
+			PreparedStatement stm;
+
 			openDatabase();
 
-			// Get individual Resultfor either Single or Double play
+			// Get individual Result for either Single or Double play
 			if (!(typeOfPlay == TypeOfPlay.COMBINED))
 			{
-				PreparedStatement stm = connection
+				stm = connection
 						.prepareStatement("SELECT name, ttotal.PlayerId_fkey, SchoolName_fkey, SumScores, "
 								+ "RANK() over (order by SumScores desc) AS OverallRank " + "FROM ( "
 								+ "SELECT PlayerId_fkey, sum(coalesce(tBestIndividualScores.Score, 0)) AS SumScores "
@@ -274,7 +234,7 @@ public class PostgreSQLJDBC
 			// Get individual Result for both Single and Double play (different query needed)
 			else
 			{
-				PreparedStatement stm = connection.prepareStatement(
+				stm = connection.prepareStatement(
 						"SELECT name, ttotal.PlayerId_fkey, SchoolName_fkey, SumScoresSimpleTotal, SumScoresDoubleTotal, "
 								+ "rank() over (order by SumScoresTotal desc) AS OverallRank, SumScoresTotal "
 								+ "FROM ( "
@@ -332,7 +292,11 @@ public class PostgreSQLJDBC
 							resultSet.getInt("OverallRank")));
 				}
 			}
-			closeDatabase(resultSet);
+
+			resultSet.close();
+			stm.close();
+
+			closeDatabase();
 		}
 		catch (Exception e)
 		{
@@ -379,24 +343,28 @@ public class PostgreSQLJDBC
 				numberOfPools = resultSet.getInt("score");
 			}
 
-			closeDatabase(stm, resultSet);
+			resultSet.close();
+			stm.close();
+
+			closeDatabase();
 		}
 
 		catch (Exception e)
 		{
 			e.printStackTrace();
-			// System.exit(0);
+			LoggerWrapper.myLogger.severe(e.toString());
+			System.exit(0);
 		}
 
 		return numberOfPools;
 	}
 
 	/**
-	 * Gets the list of all subscribed players
+	 * Gets the list of the names all players filtered by school, category and gender
 	 *
-	 * @return number of pools
+	 * @return list of player names
 	 */
-	public static ArrayList<String> getPlayersBySchool(String schoolName, Category category, Gender gender)
+	public static ArrayList<String> getPlayersByFilter(String schoolName, Category category, Gender gender)
 	{
 		ArrayList<String> listPlayersNames = new ArrayList<String>();
 
@@ -418,7 +386,10 @@ public class PostgreSQLJDBC
 				listPlayersNames.add(resultSet.getString("Name"));
 			}
 
-			closeDatabase(stm, resultSet);
+			stm.close();
+			resultSet.close();
+
+			closeDatabase();
 		}
 
 		catch (Exception e)
@@ -456,7 +427,10 @@ public class PostgreSQLJDBC
 						Category.valueOf(resultSet.getString("Category").toUpperCase())));
 			}
 
-			closeDatabase(stm, resultSet);
+			resultSet.close();
+			stm.close();
+
+			closeDatabase();
 		}
 
 		catch (Exception e)
@@ -491,7 +465,10 @@ public class PostgreSQLJDBC
 				listSchoolNames.add(resultSet.getString("Name"));
 			}
 
-			closeDatabase(stm, resultSet);
+			stm.close();
+			resultSet.close();
+
+			closeDatabase();
 		}
 
 		catch (Exception e)
@@ -546,7 +523,9 @@ public class PostgreSQLJDBC
 		try
 		{
 			ResultSet resultSet;
+
 			openDatabase();
+
 			Statement stmt = connection.createStatement();
 
 			resultSet = stmt.executeQuery(teamResultsGetOverallRankBySchoolQuery(typeOfResult));
@@ -557,7 +536,10 @@ public class PostgreSQLJDBC
 						resultSet.getFloat("TotalScoreBySchool")));
 			}
 
-			closeDatabase(stmt, resultSet);
+			stmt.close();
+			resultSet.close();
+
+			closeDatabase();
 		}
 
 		catch (Exception e)
@@ -585,7 +567,7 @@ public class PostgreSQLJDBC
 		{
 			ResultSet resultSet;
 			openDatabase();
-			statement = connection.createStatement();
+			Statement statement = connection.createStatement();
 
 			resultSet = statement.executeQuery(teamResultsGetScoresByTournamentQuery(typeOfResult));
 
@@ -600,7 +582,10 @@ public class PostgreSQLJDBC
 				teamsResults.get(teamsResults.size() - 1).addScore(resultSet.getFloat("SumScoresByTournament"));
 			}
 
-			closeDatabase(statement, resultSet);
+			resultSet.close();
+			statement.close();
+
+			closeDatabase();
 		}
 
 		catch (Exception e)

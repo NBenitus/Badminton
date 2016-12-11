@@ -1,20 +1,18 @@
 package javafx_gui;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import excelHelper.ExcelFileReader;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
-import jxl.Workbook;
-import jxl.read.biff.BiffException;
-import jxl.write.WritableWorkbook;
 import utilities.Utilities;
 
 public class Dialog
@@ -96,7 +94,7 @@ public class Dialog
 		{
 			try
 			{
-				ExcelFileReader.initialize(file);
+				WorkbookFactory.create(file);
 			}
 			catch (Exception e)
 			{
@@ -125,16 +123,14 @@ public class Dialog
 			// Check if the file is not opened
 			if(file.exists() && !(file.length() == 0) && !file.isDirectory())
 			{
-				Workbook workbook = Workbook.getWorkbook(file);;
-				WritableWorkbook workbookCopy = Workbook.createWorkbook(file, workbook);
+				Workbook workbook = WorkbookFactory.create(file);;
 				workbook.close();
-				workbookCopy.close();
 			}
 		}
 
 		// Display an error message that the file is already opened
 		// (Note: If the file is corruped, this message will also be displayed. TO DO)
-		catch (BiffException | IOException ex)
+		catch (Exception e)
 		{
 			alert = new Alert(AlertType.ERROR);
 			alert.setTitle("Erreur");
@@ -143,11 +139,11 @@ public class Dialog
 
 			alert.showAndWait();
 		}
-		catch (Exception e1)
-		{
-			alert = Dialog.getExceptionDialog(e1, "Une erreur est survenue lors de la sauvegarde du fichier de classements.");
-			alert.showAndWait();
-		}
+//		catch (Exception e1)
+//		{
+//			alert = Dialog.getExceptionDialog(e1, "Une erreur est survenue lors de la sauvegarde du fichier de classements.");
+//			alert.showAndWait();
+//		}
 
 		return alert;
 	}
