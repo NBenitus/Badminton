@@ -23,7 +23,6 @@ import standings.Player;
 
 public class PostgreSQLJDBC
 {
-	private static LoggerWrapper loggerWrapper = LoggerWrapper.getInstance();
 	private static Connection connection;
 
 	/**
@@ -189,7 +188,7 @@ public class PostgreSQLJDBC
 			System.exit(0);
 		}
 
-		System.out.println("Database closed successfully");
+//		System.out.println("Database closed successfully");
 	}
 
 	/**
@@ -648,7 +647,8 @@ public class PostgreSQLJDBC
 			LoggerWrapper.myLogger.severe(e.toString());
 			System.exit(0);
 		}
-		System.out.println("Database opened successfully");
+
+//		System.out.println("Database opened successfully");
 	}
 
 	/**

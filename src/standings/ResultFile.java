@@ -1,6 +1,7 @@
 package standings;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -40,6 +41,8 @@ public class ResultFile
 	private File inputFile;
 	private File outputFile;
 
+	private InputStream inputStream;
+
 	/**
 	 * Constructor.
 	 *
@@ -48,9 +51,9 @@ public class ResultFile
 	 * @param outputFile
 	 *            file that will contain the pre-filled results file without scores
 	 */
-	public ResultFile(File inputFile, File outputFile)
+	public ResultFile(InputStream inputStream, File outputFile)
 	{
-		this.inputFile = inputFile;
+		this.inputStream = inputStream;
 		this.outputFile = outputFile;
 	}
 
@@ -63,7 +66,6 @@ public class ResultFile
 	public ResultFile(File inputFile)
 	{
 		this.inputFile = inputFile;
-		this.outputFile = null;
 	}
 
 	/**
@@ -181,9 +183,15 @@ public class ResultFile
 	{
 		ArrayList<Player> listPlayers = PostgreSQLJDBC.getAllPlayers();
 
-		Workbook workbook = POIExcelFileProcessor.createWorkbook(inputFile);
+		Workbook workbook = POIExcelFileProcessor.createWorkbook(inputStream);
 
 		Sheet sheet = workbook.getSheet(SHEET_NAME);
+
+		// Freeze the header rows for scrolling purposes
+		for (int i = 0; i <= Column.FIRST_TOURNAMENT.number(); i++)
+		{
+			sheet.createFreezePane(i, 0);
+		}
 
 		// Iterate over both types of play
 		for (int k = 0; k < TypeOfPlay.values().length; k++)
@@ -193,7 +201,7 @@ public class ResultFile
 				Row row = sheet.createRow((short) (i * 2) + k + FIRST_ROW);
 
 				// Iterate over each column where cells will be written
-				for (int j = 0; j <= Column.values().length; j++)
+				for (int j = 0; j < Column.values().length; j++)
 				{
 					Cell cell = row.createCell((short) j);
 

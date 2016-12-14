@@ -16,7 +16,6 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.ss.util.RegionUtil;
 
 import database.PostgreSQLJDBC;
 import excelHelper.POIExcelFileProcessor;
@@ -32,13 +31,17 @@ public class StandingsFile
 	private TeamResultSheet teamResultSheet;
 
 	private static final int NUMBER_OF_HEADER_ROWS = 4;
-	private static final int FIRST_COLUMN = 0;
 	private static final int NUMBER_TOURNAMENTS = 5;
 
 	private File outputFile;
 	private int currentRow;
+	private boolean isColor;
+
+	private static final String FONT_NAME = "ARIAL";
+	private static final Short FONT_SIZE = 11;
 
 	private ArrayList<IndexedColors> backgroundColors = new ArrayList<IndexedColors>();
+	private ArrayList<Font> fonts = new ArrayList<Font>();
 	private ArrayList<CellStyle> coloredCellStyles = new ArrayList<CellStyle>();
 
 	public enum IndividualColumn {
@@ -81,9 +84,10 @@ public class StandingsFile
 	 * @param outputFile
 	 *            file that will contain the created team and individual results
 	 */
-	public StandingsFile(InputStream inputStream, File outputFile)
+	public StandingsFile(InputStream inputStream, File outputFile, boolean isColor)
 	{
 		this.outputFile = outputFile;
+		this.isColor = isColor;
 		workbook = POIExcelFileProcessor.createWorkbook(inputStream);
 
 		for (int i = 0; i < TypeOfPlay.values().length; i++)
@@ -93,7 +97,7 @@ public class StandingsFile
 
 		teamResultSheet = new TeamResultSheet();
 
-		initializeColors();
+		initializeColorsAndFonts();
 	}
 
 	/**
@@ -132,22 +136,32 @@ public class StandingsFile
 				sheet.setColumnBreak(IndividualResultSheet.FIRST_COLUMN
 						+ (j * individualResultSheets.get(i).getNumberOfColumns() - 1));
 			}
-
-			for (int k = 0; k < individualResultSheets.get(i).getRowPageBreaks().size(); k++)
-			{
-				sheet.setRowBreak(individualResultSheets.get(i).getRowPageBreaks().get(k));
-			}
 		}
 	}
 
 	/**
 	 * Initializes the color coding for the schools
 	 */
-	public void initializeColors()
+	public void initializeColorsAndFonts()
 	{
+		Font whiteFont = workbook.createFont();
+		whiteFont.setFontHeightInPoints(FONT_SIZE);
+		whiteFont.setFontName(FONT_NAME);
+		whiteFont.setBold(true);
+		whiteFont.setColor(IndexedColors.WHITE.getIndex());
+
+		Font blackFont = workbook.createFont();
+		blackFont.setFontHeightInPoints(FONT_SIZE);
+		blackFont.setFontName(FONT_NAME);
+		blackFont.setBold(true);
+		blackFont.setColor(IndexedColors.BLACK.getIndex());
+
 		backgroundColors.addAll(Arrays.asList(IndexedColors.RED, IndexedColors.YELLOW, IndexedColors.ORANGE,
 				IndexedColors.DARK_BLUE, IndexedColors.TURQUOISE, IndexedColors.BLACK, IndexedColors.TEAL,
 				IndexedColors.LIME, IndexedColors.ROSE, IndexedColors.GREEN));
+
+		fonts.addAll(Arrays.asList(blackFont, blackFont, blackFont, whiteFont, blackFont, whiteFont, blackFont,
+				blackFont, blackFont, blackFont));
 	}
 
 	/**
@@ -197,35 +211,35 @@ public class StandingsFile
 	 * @param currentFirstColumnNumber
 	 *            type of play to write (ex: Single)
 	 */
-	public void writeIndividualResultSheet(IndividualResultSheet individualResultSheet, TypeOfResult typeOfResult,
-			int currentFirstColumnNumber)
+	public void writeIndividualResultSheet(IndividualResultSheet individualResultSheet,
+			TypeOfResult typeOfResult, int currentFirstColumnNumber)
 	{
 		ArrayList<IndividualResult> listIndividualResults = PostgreSQLJDBC.getIndividualResults(typeOfResult,
 				individualResultSheet.getTypeOfPlay());
 		ArrayList<String> listSchoolNames = PostgreSQLJDBC.getAllSchools();
 
 		Sheet sheet = workbook.getSheet(individualResultSheet.getName());
-
-		// Create font for individual results cells
-		Font font = workbook.createFont();
-		font.setFontHeightInPoints((short) 11);
-		font.setFontName("ARIAL");
-		font.setBold(false);
+		Font normalFont = workbook.createFont();
+		normalFont.setFontHeightInPoints(FONT_SIZE);
+		normalFont.setFontName(FONT_NAME);
+		normalFont.setBold(false);
 
 		// Create cell style for individual results cells
 		CellStyle cellStyle = workbook.createCellStyle();
 		cellStyle.setAlignment(HorizontalAlignment.LEFT);
-		cellStyle.setFont(font);
-		cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-		for (int i = 0; i < backgroundColors.size(); i++)
+		if (isColor == true)
 		{
-			CellStyle coloredCellStyle = workbook.createCellStyle();
-			coloredCellStyle.cloneStyleFrom(cellStyle);
-			cellStyle.setFillForegroundColor(backgroundColors.get(i).getIndex());
-			cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+			for (int i = 0; i < backgroundColors.size(); i++)
+			{
+				CellStyle coloredCellStyle = workbook.createCellStyle();
+				coloredCellStyle.cloneStyleFrom(cellStyle);
+				coloredCellStyle.setFont(fonts.get(i));
+				coloredCellStyle.setFillForegroundColor(backgroundColors.get(i).getIndex());
+				coloredCellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-			coloredCellStyles.add(coloredCellStyle);
+				coloredCellStyles.add(coloredCellStyle);
+			}
 		}
 
 		// Setting the category's header
@@ -255,8 +269,18 @@ public class StandingsFile
 		// Iterate over each individual result
 		for (int i = 0; i < listIndividualResults.size(); i++)
 		{
-			CellStyle currentCellStyle = coloredCellStyles
-					.get(listSchoolNames.indexOf(listIndividualResults.get(i).getSchoolName()));
+			CellStyle currentCellStyle;
+
+			if (isColor == true)
+			{
+				currentCellStyle = coloredCellStyles
+						.get(listSchoolNames.indexOf(listIndividualResults.get(i).getSchoolName()));
+			}
+			else
+			{
+				currentCellStyle = cellStyle;
+				currentCellStyle.setFont(normalFont);
+			}
 
 			POIExcelFileProcessor.createCell(sheet,
 					(individualResultSheet.getNumberOfColumns() * currentFirstColumnNumber)
@@ -303,7 +327,8 @@ public class StandingsFile
 				POIExcelFileProcessor.createCell(sheet,
 						(individualResultSheet.getNumberOfColumns() * currentFirstColumnNumber)
 								+ IndividualResultSheet.FIRST_COLUMN + IndividualColumn.SCORE.number(),
-						IndividualResultSheet.FIRST_ROW + i, listIndividualResults.get(i).getScore() + "", cellStyle);
+						IndividualResultSheet.FIRST_ROW + i, listIndividualResults.get(i).getScore() + "",
+						currentCellStyle);
 			}
 		}
 	}
@@ -334,10 +359,19 @@ public class StandingsFile
 			}
 			else if (typeOfResult == TypeOfResult.BENJAMIN_MASCULIN)
 			{
-				// Merge the gender header
-				CellRangeAddress cellRangeAddress = new CellRangeAddress(currentRow, currentRow,
+				// Adding the border to the last line of the last category
+				CellRangeAddress cellRangeAddress = new CellRangeAddress(currentRow - 1, currentRow - 1,
 						TeamColumn.values()[0].number(),
 						TeamColumn.values()[TeamColumn.values().length - 1].number() + NUMBER_TOURNAMENTS);
+
+				// Set the border around the type of result
+				POIExcelFileProcessor.setBorder(sheet, cellRangeAddress, BorderStyle.MEDIUM, BorderStyle.MEDIUM,
+						BorderStyle.NONE, BorderStyle.MEDIUM);
+
+				// Merge the gender header
+				cellRangeAddress = new CellRangeAddress(currentRow, currentRow, TeamColumn.values()[0].number(),
+						TeamColumn.values()[TeamColumn.values().length - 1].number() + NUMBER_TOURNAMENTS);
+
 				sheet.addMergedRegion(cellRangeAddress);
 
 				// Setting the row page break
@@ -414,7 +448,8 @@ public class StandingsFile
 					currentRow - teamsResults.size() - 1, TeamColumn.values()[0].number(),
 					TeamColumn.values()[TeamColumn.values().length - 1].number() + NUMBER_TOURNAMENTS);
 
-			RegionUtil.setBorderBottom(BorderStyle.NONE, cellRangeAddress, sheet);
+			POIExcelFileProcessor.setBorder(sheet, cellRangeAddress, BorderStyle.MEDIUM, BorderStyle.MEDIUM,
+					BorderStyle.NONE, BorderStyle.NONE);
 
 			cellRangeAddress = new CellRangeAddress(currentRow - teamsResults.size() - NUMBER_OF_HEADER_ROWS,
 					currentRow - 1, TeamColumn.values()[0].number(),
@@ -422,9 +457,7 @@ public class StandingsFile
 		}
 
 		// Set the border around the type of result
-		RegionUtil.setBorderBottom(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-		RegionUtil.setBorderTop(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-		RegionUtil.setBorderLeft(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-		RegionUtil.setBorderRight(BorderStyle.MEDIUM, cellRangeAddress, sheet);
+		POIExcelFileProcessor.setBorder(sheet, cellRangeAddress, BorderStyle.MEDIUM, BorderStyle.MEDIUM,
+				BorderStyle.MEDIUM, BorderStyle.MEDIUM);
 	}
 }

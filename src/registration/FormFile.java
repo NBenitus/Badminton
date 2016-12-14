@@ -13,6 +13,8 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.DataValidation;
 import org.apache.poi.ss.usermodel.DataValidationConstraint;
 import org.apache.poi.ss.usermodel.DataValidationHelper;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Name;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -20,7 +22,6 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
-import org.apache.poi.ss.util.RegionUtil;
 
 import database.PostgreSQLJDBC;
 import excelHelper.POIExcelFileProcessor;
@@ -34,12 +35,7 @@ public class FormFile
 	private static final int MASCULINE_INDEX = 0;
 	private static final int FEMININE_INDEX = 1;
 
-	private static final int NAME_COLUMNS[] = { 1, 3 };
-	private static final int FIRST_NAME_COLUMN = 0;
-	private static final int SECOND_NAME_COLUMN = 1;
 	private static final int FIRST_ROW = 9;
-	private static final int FIRST_COLUMN = 0;
-	private static final int LAST_COLUMN = 3;
 
 	private static final int DATE_COLUMN = 1;
 	private static final int DATE_ROW = 5;
@@ -50,10 +46,31 @@ public class FormFile
 	private static final String SCHOOL_NAME_PREFIX = "INSTITUTION: ";
 
 	private static final int NUMBER_OF_ROWS_BETWEEN_SECTIONS = 4;
+	private static final Short CONTACT_INFO_HEIGHT = 950;
+
+	private static final String HIDDEN_SHEET_NAME = "Hidden";
+	private static final int NUMBER_DISTINCT_LISTS = 2;
 
 	private ArrayList<DataValidationConstraint> listConstraints = new ArrayList<DataValidationConstraint>();
+	private ArrayList<DataValidationConstraint> listConstraintsShort = new ArrayList<DataValidationConstraint>();
 
 	private Workbook workbook;
+
+	public enum Column {
+		FIRST_NAME(1), MIDDLE(2), SECOND_NAME(3);
+
+		private int number;
+
+		Column(int number)
+		{
+			this.number = number;
+		}
+
+		public int number()
+		{
+			return number;
+		}
+	}
 
 	public enum Section {
 		SINGLE("SIMPLE MASCULIN"), DOUBLE_MASCULINE("DOUBLE MASCULIN"), DOUBLE_FEMININE("DOUBLE FÉMININ");
@@ -74,6 +91,23 @@ public class FormFile
 		public Section next()
 		{
 			return vals[(this.ordinal() + 1) % vals.length];
+		}
+	}
+
+	public enum SectionHeader {
+		SINGLE("SIMPLE MASCULIN"), DOUBLE_MASCULINE("DOUBLE MASCULIN"), DOUBLE_FEMININE("DOUBLE FÉMININ"), NAME(
+				"NOM"), EMPTY("");
+
+		private String headerText;
+
+		SectionHeader(String headerText)
+		{
+			this.headerText = headerText;
+		}
+
+		public String text()
+		{
+			return headerText;
 		}
 	}
 
@@ -114,98 +148,104 @@ public class FormFile
 		this.schoolName = schoolName;
 	}
 
-
-
 	/**
-	 * Adds border around a range of cells
+	 * Adds the "ET" text in between the two rows of player names for the double sections
 	 *
 	 * @param sheet
-	 *            sheet for which to add border to cells
-	 * @param startRow
-	 *            first row for the range of cells
-	 * @param numberOfRows
-	 *            number of rows contained in the range of cells
+	 *            sheet that contains the double rows
+	 * @param firstRow
+	 *            first row of the double rows
+	 * @param numberRows
+	 *            number of double rows
 	 */
-	public void addBorder(Sheet sheet, int startRow, int numberOfRows)
+	public void addMiddleColumnText(Sheet sheet, int firstRow, int numberRows)
 	{
-		// Set borders for the left most cell
-		CellRangeAddress cellRangeAddress = new CellRangeAddress(startRow, startRow + numberOfRows, FIRST_COLUMN,
-				FIRST_COLUMN);
-		RegionUtil.setBorderLeft(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-		RegionUtil.setBorderRight(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-
-		// Set borders for the first name column
-		cellRangeAddress = new CellRangeAddress(startRow, startRow + numberOfRows, NAME_COLUMNS[FIRST_NAME_COLUMN],
-				NAME_COLUMNS[FIRST_NAME_COLUMN]);
-		RegionUtil.setBorderRight(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-
-		// Set borders for the second name column
-		cellRangeAddress = new CellRangeAddress(startRow, startRow + numberOfRows, LAST_COLUMN, LAST_COLUMN);
-		RegionUtil.setBorderLeft(BorderStyle.THIN, cellRangeAddress, sheet);
-		RegionUtil.setBorderRight(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-
-		// Set border for the first row of names
-		cellRangeAddress = new CellRangeAddress(startRow, startRow, FIRST_COLUMN, LAST_COLUMN);
-		RegionUtil.setBorderTop(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-		RegionUtil.setBorderBottom(BorderStyle.NONE, cellRangeAddress, sheet);
-
-		// Set border for the last row of names
-		cellRangeAddress = new CellRangeAddress(startRow + numberOfRows, startRow + numberOfRows, FIRST_COLUMN,
-				LAST_COLUMN);
-		RegionUtil.setBorderBottom(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-		RegionUtil.setBorderTop(BorderStyle.NONE, cellRangeAddress, sheet);
+		// Iterate for each row in the double section
+		for (int i = firstRow; i <= firstRow + numberRows; i++)
+		{
+			POIExcelFileProcessor.createCell(sheet, Column.MIDDLE.number(), i, "ET");
+		}
 	}
 
 	/**
-	 * Creates a hidden sheet that contains name for players for a given category and a given gender
+	 * Populates the hidden sheet that contains name for all the players of each school
 	 * Will be used as a reference for drop-down lists for the main sheets.
 	 *
-	 * @param workbook
-	 *            workbook object that contains the form file
-	 * @param sheetName
-	 *            name of the hidden sheet to create
+	 * @param categoryNumber
+	 *            number of the category (from 0 to 2)
+	 * @param genderNumber
+	 *            number of the gender (from 0 to 1)
 	 * @param listPlayerNames
 	 *            list of the player names for a given category and a given gender
 	 */
-	public void createHiddenSheet(Workbook workbook, String sheetName, ArrayList<String> listPlayerNames)
+	public void populateHiddenSheet(int categoryNumber, int genderNumber, ArrayList<String> listPlayerNames)
 	{
 		DataValidationConstraint constraint = null;
 		DataValidationHelper validationHelper = null;
 
-		// Creates and hides a sheet
-		Sheet hiddenSheet = workbook.createSheet(sheetName);
-		workbook.setSheetHidden(workbook.getSheetIndex(sheetName), Workbook.SHEET_STATE_VERY_HIDDEN);
+		Cell cell = null;
+
+		Sheet hiddenSheet = workbook.getSheet(HIDDEN_SHEET_NAME);
+
+		// Creates the hidden sheet if it does not exist
+		if (hiddenSheet == null)
+		{
+			hiddenSheet = workbook.createSheet(HIDDEN_SHEET_NAME);
+			workbook.setSheetHidden(workbook.getSheetIndex(HIDDEN_SHEET_NAME), Workbook.SHEET_STATE_VERY_HIDDEN);
+		}
+
 		hiddenSheet.protectSheet("Test");
 
-		Name namedCell = workbook.createName();
-		namedCell.setNameName(sheetName);
-
 		// Adds the list of player names in the sheet
-		for (int k = 0; k <= listPlayerNames.size(); k++)
+		for (int i = 0; i <= listPlayerNames.size(); i++)
 		{
 			String name = null;
 
-			// Adds the entry "RECHERCHE PARTENAIRE" which is used for double teams
-			if (k == listPlayerNames.size())
+
+			if (i == listPlayerNames.size())
 			{
-				name = "RECHERCHE PARTENAIRE";
+				// Adds the entry "RECHERCHE PARTENAIRE" which is used for double teams
+				if (listPlayerNames.size() != 0)
+				{
+					name = "RECHERCHE PARTENAIRE";
+				}
+
+				// Adds the entry that there is no player for the given category and gender
+				else
+				{
+					name = "AUCUN JOUEUR LISTÉ";
+				}
 			}
 			else
 			{
-				name = listPlayerNames.get(k);
+				name = listPlayerNames.get(i);
 			}
 
-			Row row = hiddenSheet.createRow(k);
-			Cell cell = row.createCell(0);
+			Row row = hiddenSheet.getRow(i);
+
+			// Create row if it does not exist
+			if (row == null)
+			{
+				row = hiddenSheet.createRow(i);
+			}
+
+			cell = row.createCell((categoryNumber * Gender.values().length)+ genderNumber);
 			cell.setCellValue(name);
 		}
 
-		namedCell.setRefersToFormula(sheetName + "!$A$1:$A$" + (listPlayerNames.size() + 1));
-
+		// Set the validation for the drop-down lists
 		validationHelper = hiddenSheet.getDataValidationHelper();
-		constraint = validationHelper.createFormulaListConstraint(sheetName);
+		constraint = validationHelper
+				.createFormulaListConstraint(HIDDEN_SHEET_NAME + "!$" + (char) (cell.getColumnIndex() + 65)
+						+ "$1:$" + (char) (cell.getColumnIndex() + 65) + "$" + (listPlayerNames.size() + 1));
 
 		listConstraints.add(constraint);
+
+		constraint = validationHelper
+				.createFormulaListConstraint(HIDDEN_SHEET_NAME + "!$" + (char) (cell.getColumnIndex() + 65)
+						+ "$1:$" + (char) (cell.getColumnIndex() + 65) + "$" + Math.max(listPlayerNames.size(), 1));
+
+		listConstraintsShort.add(constraint);
 	}
 
 	/**
@@ -220,35 +260,31 @@ public class FormFile
 	{
 		// Merges the cells for the first contact information row
 		CellRangeAddress cellRangeAddress = new CellRangeAddress(firstContactInformationRow, firstContactInformationRow,
-				FIRST_COLUMN, LAST_COLUMN);
+				Column.FIRST_NAME.number(), Column.SECOND_NAME.number());
 		sheet.addMergedRegion(cellRangeAddress);
 
 		// Merges the cells for the second contact information row
 		cellRangeAddress = new CellRangeAddress(firstContactInformationRow + 1, firstContactInformationRow + 1,
-				FIRST_COLUMN, LAST_COLUMN);
+				Column.FIRST_NAME.number(), Column.SECOND_NAME.number());
 		sheet.addMergedRegion(cellRangeAddress);
 
 		// Adjust the row's height to contain for the first contact information row
 		Row row = sheet.getRow(firstContactInformationRow);
-		row.setHeight((short) 750);
+		row.setHeight(CONTACT_INFO_HEIGHT);
 
 		// Add borders for the first contact information cell
-		cellRangeAddress = new CellRangeAddress(firstContactInformationRow, firstContactInformationRow, FIRST_COLUMN,
-				LAST_COLUMN);
+		cellRangeAddress = new CellRangeAddress(firstContactInformationRow, firstContactInformationRow,
+				Column.FIRST_NAME.number(), Column.SECOND_NAME.number());
 
-		RegionUtil.setBorderTop(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-		RegionUtil.setBorderLeft(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-		RegionUtil.setBorderRight(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-		RegionUtil.setBorderBottom(BorderStyle.NONE, cellRangeAddress, sheet);
+		POIExcelFileProcessor.setBorder(sheet, cellRangeAddress, BorderStyle.MEDIUM, BorderStyle.MEDIUM,
+				BorderStyle.MEDIUM, BorderStyle.NONE);
 
 		// Add borders for the second contact information cell
 		cellRangeAddress = new CellRangeAddress(firstContactInformationRow + 1, firstContactInformationRow + 1,
-				FIRST_COLUMN, LAST_COLUMN);
+				Column.FIRST_NAME.number(), Column.SECOND_NAME.number());
 
-		RegionUtil.setBorderTop(BorderStyle.NONE, cellRangeAddress, sheet);
-		RegionUtil.setBorderBottom(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-		RegionUtil.setBorderLeft(BorderStyle.MEDIUM, cellRangeAddress, sheet);
-		RegionUtil.setBorderRight(BorderStyle.MEDIUM, cellRangeAddress, sheet);
+		POIExcelFileProcessor.setBorder(sheet, cellRangeAddress, BorderStyle.MEDIUM, BorderStyle.MEDIUM,
+				BorderStyle.MEDIUM, BorderStyle.MEDIUM);
 	}
 
 	/**
@@ -290,38 +326,41 @@ public class FormFile
 					if (row != null)
 					{
 						// Read specific cells for each row.
-						for (int k = 0; k <= NAME_COLUMNS[NAME_COLUMNS.length - 1]; k++)
+						for (int k = Column.FIRST_NAME.number(); k <= Column.values().length; k++)
 						{
 							// Add the content of the cells to the list of single players and double players
-							if (k == NAME_COLUMNS[FIRST_NAME_COLUMN])
+							if (k == Column.FIRST_NAME.number())
 							{
-								// Category headers
-								if (row.getCell(NAME_COLUMNS[FIRST_NAME_COLUMN])
-										.getStringCellValue() == Section.DOUBLE_MASCULINE.text())
+								switch (SectionHeader.valueOf(row.getCell(k).getStringCellValue()))
 								{
+
+								// Category headers
+								case DOUBLE_MASCULINE:
+
 									isPlayer = false;
 
 									section = Section.DOUBLE_MASCULINE;
 									gender = Gender.MASCULIN;
-								}
-								else if (row.getCell(NAME_COLUMNS[FIRST_NAME_COLUMN])
-										.getStringCellValue() == Section.DOUBLE_FEMININE.text())
-								{
+
+									break;
+
+								case DOUBLE_FEMININE:
+
 									isPlayer = false;
 
 									section = Section.DOUBLE_FEMININE;
 									gender = Gender.FÉMININ;
-								}
+
+									break;
 
 								// Subsection header
-								else if (row.getCell(NAME_COLUMNS[FIRST_NAME_COLUMN]).getStringCellValue().equals("Nom")
-										|| (row.getCell(NAME_COLUMNS[FIRST_NAME_COLUMN]).getStringCellValue()
-												.equals("")))
-								{
+								case NAME:
+								case EMPTY:
+
 									isPlayer = false;
-								}
-								else
-								{
+									break;
+
+								default:
 									isPlayer = true;
 
 									name = row.getCell(k).getStringCellValue();
@@ -341,9 +380,12 @@ public class FormFile
 											doublePlayer = new Player(name, schoolName, gender, category);
 										}
 									}
+
+									break;
 								}
 							}
-							else if (k == NAME_COLUMNS[SECOND_NAME_COLUMN])
+
+							else if (k == Column.SECOND_NAME.number())
 							{
 
 								// Check if cell exists in row
@@ -401,6 +443,55 @@ public class FormFile
 	}
 
 	/**
+	 * Sets the black background to the cells in the middle column in the Single section
+	 *
+	 * @param sheet
+	 *            sheet which contains the cells that will get the black background
+	 * @param startRow
+	 *            first row of the Single section
+	 * @param numberOfRows
+	 *            number of rows in the Single section
+	 */
+	public void setBlackBackground(Sheet sheet, int startRow, int numberOfRows)
+	{
+		CellStyle blackBackground = workbook.createCellStyle();
+		blackBackground.setFillForegroundColor(IndexedColors.BLACK.getIndex());
+		blackBackground.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+		// Iterate for each row in the Single section that contains players validation
+		for (int i = startRow; i <= startRow + numberOfRows; i++)
+		{
+			POIExcelFileProcessor.createCell(sheet, Column.MIDDLE.number(), i, "", blackBackground);
+
+			// Set borders for the middle column cell
+			CellRangeAddress cellRangeAddress = new CellRangeAddress(i, i, Column.MIDDLE.number(),
+					Column.MIDDLE.number());
+
+			POIExcelFileProcessor.setBorder(sheet, cellRangeAddress, BorderStyle.MEDIUM, BorderStyle.MEDIUM,
+					BorderStyle.MEDIUM, BorderStyle.MEDIUM);
+		}
+	}
+
+	/**
+	 * Sets the border for each section
+	 *
+	 * @param sheet
+	 *            sheet for which to add border to cells
+	 * @param startRow
+	 *            first row for the range of cells
+	 * @param numberOfRows
+	 *            number of rows contained in the range of cells
+	 */
+	public void setSectionBorder(Sheet sheet, int startRow, int numberOfRows)
+	{
+		CellRangeAddress cellRangeAddress = new CellRangeAddress(startRow, startRow + numberOfRows,
+				Column.FIRST_NAME.number(), Column.SECOND_NAME.number());
+
+		POIExcelFileProcessor.setBorder(sheet, cellRangeAddress, BorderStyle.MEDIUM, BorderStyle.MEDIUM,
+				BorderStyle.MEDIUM, BorderStyle.MEDIUM);
+	}
+
+	/**
 	 * Sets the date for the form file
 	 *
 	 * @param sheet
@@ -430,23 +521,30 @@ public class FormFile
 	}
 
 	/**
-	 * Sets the school name for the form file
+	 * Unlocks cells in the section.
+	 * CURRENTLY NOT WORKING (HSSF VS XSSF)???
 	 *
 	 * @param sheet
-	 *            sheet for which to add the school name
+	 *            sheet that contains the cells to unlocked
+	 * @param startRow
+	 *            first row of the section to unlock
+	 * @param numberOfRows
+	 *            number of rows in the section to unlock
 	 */
 	public void unlockCells(Sheet sheet, int startRow, int numberOfRows)
 	{
 		CellStyle unlockedCellStyle = workbook.createCellStyle();
 		unlockedCellStyle.setLocked(false);
 
+		// Iterate for each row in the section
 		for (int i = startRow; i < startRow + numberOfRows; i++)
 		{
 			Row row = sheet.getRow(i);
 
+			// Iterate for each cell in the section
 			for (int j = 0; j < row.getLastCellNum(); j++)
 			{
-				org.apache.poi.ss.usermodel.Cell cell = row.getCell(j);
+				Cell cell = row.getCell(j);
 
 				if (cell != null)
 				{
@@ -463,6 +561,7 @@ public class FormFile
 	{
 		workbook = POIExcelFileProcessor.createWorkbook(inputStream);
 		DataValidationHelper validationHelper = null;
+		int[] constraintIndexes = new int[2];
 
 		// Iterate for each category of play (ex: Benjamin, cadet and juvénile)
 		for (int i = 0; i < Category.values().length; i++)
@@ -495,9 +594,6 @@ public class FormFile
 			for (int j = 0; j < Section.values().length; j++)
 			{
 				int numberRows = 0;
-				int[] constraintIndexes = new int[NAME_COLUMNS.length];
-
-				CellRangeAddressList[] addressList = new CellRangeAddressList[NAME_COLUMNS.length];
 
 				switch (Section.values()[j])
 				{
@@ -507,8 +603,8 @@ public class FormFile
 					numberRows = Math.max(listsPlayers.get(MASCULINE_INDEX).size(),
 							listsPlayers.get(FEMININE_INDEX).size());
 
-					constraintIndexes[0] = i * 2;
-					constraintIndexes[1] = (i * 2) + 1;
+					constraintIndexes[0] = i * Gender.values().length;
+					constraintIndexes[1] = (i * Gender.values().length) + 1;
 
 					break;
 
@@ -516,38 +612,57 @@ public class FormFile
 
 					numberRows = (listsPlayers.get(MASCULINE_INDEX).size() / 2) + 1;
 
-					constraintIndexes[0] = constraintIndexes[1] = i * 2;
+					constraintIndexes[0] = constraintIndexes[1] = i * Gender.values().length;
 
 					break;
 
 				case DOUBLE_FEMININE:
 
 					numberRows = (listsPlayers.get(FEMININE_INDEX).size() / 2) + 1;
-					constraintIndexes[0] = constraintIndexes[1] = (i * 2) + 1;
+
+					constraintIndexes[0] = constraintIndexes[1] = (i * Gender.values().length) + 1;
 
 					break;
 				}
 
 				sheet.shiftRows(firstRow, sheet.getLastRowNum(), numberRows);
-				addBorder(sheet, firstRow, numberRows);
+				setSectionBorder(sheet, firstRow, numberRows);
 				// unlockCells(workbook, sheet, firstRow, numberRows);
 
-				addressList[FIRST_NAME_COLUMN] = new CellRangeAddressList(firstRow, firstRow + numberRows,
-						NAME_COLUMNS[FIRST_NAME_COLUMN], NAME_COLUMNS[FIRST_NAME_COLUMN]);
-				addressList[SECOND_NAME_COLUMN] = new CellRangeAddressList(firstRow, firstRow + numberRows,
-						NAME_COLUMNS[SECOND_NAME_COLUMN], NAME_COLUMNS[SECOND_NAME_COLUMN]);
+				// Add the "ET" text in the middle column for double play
+				if ((Section.values()[j] == Section.DOUBLE_MASCULINE)
+						|| (Section.values()[j] == Section.DOUBLE_FEMININE))
+				{
+					addMiddleColumnText(sheet, firstRow, numberRows);
+				}
+				else
+				{
+					setBlackBackground(sheet, firstRow, numberRows);
+				}
 
+				CellRangeAddressList[] addressList = new CellRangeAddressList[2];
+
+				addressList[MASCULINE_INDEX] = new CellRangeAddressList(firstRow, firstRow + numberRows,
+						Column.FIRST_NAME.number(), Column.FIRST_NAME.number());
+				addressList[FEMININE_INDEX] = new CellRangeAddressList(firstRow, firstRow + numberRows,
+						Column.SECOND_NAME.number(), Column.SECOND_NAME.number());
+
+				// Iterate for each gender
 				for (int k = 0; k < Gender.values().length; k++)
 				{
-					// Create hidden sheet for each gender only once
+					DataValidation validation = null;
+
 					if (Section.values()[j] == Section.SINGLE)
 					{
-						createHiddenSheet(workbook, Category.values()[i].text() + "_" + Gender.values()[k].text(),
-								listsPlayers.get(k));
+						populateHiddenSheet(i, k, listsPlayers.get(k));
+						validation = validationHelper
+							.createValidation(listConstraintsShort.get(constraintIndexes[k]), addressList[k]);
 					}
-
-					DataValidation validation = validationHelper
-							.createValidation(listConstraints.get(constraintIndexes[k]), addressList[k]);
+					else
+					{
+						validation = validationHelper
+								.createValidation(listConstraints.get(constraintIndexes[k]), addressList[k]);
+					}
 
 					sheet.addValidationData(validation);
 				}

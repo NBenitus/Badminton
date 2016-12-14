@@ -11,7 +11,8 @@ import registration.FormFile;
 public class StandingsCreationHelper
 {
 	private static final String TEMPLATE_FILENAME = "/resources/Standings_Template.xls";
-	private static final String FORM_TEMPLATE_FILENAME = "/resources/FormulairesEntrees_Template.xls";
+	private static final String FORM_TEMPLATE_FILENAME = "/resources/Form_Template.xls";
+	private static final String RESULT_TEMPLATE_FILENAME = "/resources/Results_Template.xls";
 
 	private static File outputFile;
 	private static ResultFile resultFile;
@@ -116,7 +117,7 @@ public class StandingsCreationHelper
 		resultFile.addResult();
 
 		standingsExcelFile = new StandingsFile(StandingsCreationHelper.class.getResourceAsStream(TEMPLATE_FILENAME),
-				outputFile);
+				outputFile, false);
 		standingsExcelFile.write();
 
 		try
@@ -147,10 +148,11 @@ public class StandingsCreationHelper
 		resultFile = new ResultFile(new File("C:\\Benoit\\Work\\Java\\Badminton\\Liste_Résultats_Complet.xls"));
 		outputFile = new File("C:\\Benoit\\Work\\Java\\Badminton\\Résultats.xls");
 
-//		addPlayers(s1File);
-		createStandingsFile();
-//		testFormsFile();
-//		testCompareFiles();
+		// addPlayers(s1File);
+//		testCreationResultsFile();
+//		 createStandingsFile();
+		 testFormsFile();
+		// testCompareFiles();
 	}
 
 	public static void setResultFile(ResultFile resultFile)
@@ -184,9 +186,9 @@ public class StandingsCreationHelper
 
 	public static void testCreationResultsFile()
 	{
-		File inputFile = new File("C:\\Benoit\\Work\\Java\\Badminton\\RésultatsTournoi_Template.xls");
 		File outputFile = new File("C:\\Benoit\\Work\\Java\\Badminton\\Liste_Résultats.xls");
-		ResultFile resultFile = new ResultFile(inputFile, outputFile);
+		ResultFile resultFile = new ResultFile(
+				StandingsCreationHelper.class.getResourceAsStream(RESULT_TEMPLATE_FILENAME), outputFile);
 		resultFile.write();
 	}
 
@@ -202,11 +204,12 @@ public class StandingsCreationHelper
 
 			FormFile formFile = new FormFile(StandingsCreationHelper.class.getResourceAsStream(FORM_TEMPLATE_FILENAME),
 					outputFile, listSchoolNames.get(i));
+
 			formFile.write();
 
-//			FormFile testFormFile = new FormFile(new File(outputFilePrefix + listSchoolNames.get(i) + ".xls"),
-//					listSchoolNames.get(i));
-//			testFormFile.read();
+			// FormFile testFormFile = new FormFile(new File(outputFilePrefix + listSchoolNames.get(i) + ".xls"),
+			// listSchoolNames.get(i));
+			// testFormFile.read();
 		}
 	}
 }

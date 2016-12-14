@@ -7,6 +7,7 @@ import java.io.InputStream;
 
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -14,6 +15,8 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.RegionUtil;
 
 public class POIExcelFileProcessor
 {
@@ -181,6 +184,28 @@ public class POIExcelFileProcessor
 		DataFormatter df = new DataFormatter();
 
 		return df.formatCellValue(cell);
+	}
+
+	/**
+	 * Sets the border of a range of cells
+	 *
+	 * @param sheet
+	 *            sheet that contains the range of cells to apply the border to
+	 * @param columnNumber
+	 *            number of the column where the cell is situated
+	 * @param rowNumber
+	 *            number of the row where the cell is situated
+	 * @param value
+	 *            value of the cell to be created
+	 */
+	public static void setBorder(Sheet sheet, CellRangeAddress cellRangeAddress, BorderStyle leftBorder, BorderStyle rightBorder,
+			BorderStyle topBorder, BorderStyle bottomBorder)
+	{
+		RegionUtil.setBorderLeft(leftBorder, cellRangeAddress, sheet);
+		RegionUtil.setBorderRight(rightBorder, cellRangeAddress, sheet);
+		RegionUtil.setBorderTop(topBorder, cellRangeAddress, sheet);
+		RegionUtil.setBorderBottom(bottomBorder, cellRangeAddress, sheet);
+
 	}
 
 	/**
