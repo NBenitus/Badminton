@@ -11,8 +11,8 @@ import registration.FormFile;
 public class StandingsCreationHelper
 {
 	private static final String TEMPLATE_FILENAME = "/resources/Standings_Template.xls";
-	private static final String FORM_TEMPLATE_FILENAME = "/resources/Form_Template.xls";
-	private static final String RESULT_TEMPLATE_FILENAME = "/resources/Results_Template.xls";
+	private static final String FORM_TEMPLATE_FILENAME = "/resources/Form_Template.xlsx";
+	private static final String RESULT_TEMPLATE_FILENAME = "/resources/Results_Template.xlsx";
 
 	private static File outputFile;
 	private static ResultFile resultFile;
@@ -37,7 +37,7 @@ public class StandingsCreationHelper
 	}
 
 	public enum Gender {
-		MASCULIN("Masculin"), FÉMININ("Féminin");
+		MASCULINE("Masculin"), FEMININE("Féminin");
 
 		private String text;
 
@@ -53,7 +53,7 @@ public class StandingsCreationHelper
 	}
 
 	public enum TypeOfPlay {
-		SIMPLE("Simple"), DOUBLE("Double"), COMBINED("Combiné"),;
+		SINGLE("Simple"), DOUBLE("Double"), COMBINED("Combiné"),;
 
 		private String text;
 
@@ -70,10 +70,10 @@ public class StandingsCreationHelper
 
 	public enum TypeOfResult {
 
-		BENJAMIN_FEMININ(Category.BENJAMIN, Gender.FÉMININ), CADET_FEMININ(Category.CADET,
-				Gender.FÉMININ), JUVENIL_FEMININ(Category.JUVÉNILE, Gender.FÉMININ), BENJAMIN_MASCULIN(
-						Category.BENJAMIN, Gender.MASCULIN), CADET_MASCULIN(Category.CADET,
-								Gender.MASCULIN), JUVÉNILE_MASCULIN(Category.JUVÉNILE, Gender.MASCULIN);
+		BENJAMIN_FEMININ(Category.BENJAMIN, Gender.FEMININE), CADET_FEMININ(Category.CADET,
+				Gender.FEMININE), JUVENIL_FEMININ(Category.JUVÉNILE, Gender.FEMININE), BENJAMIN_MASCULIN(
+						Category.BENJAMIN, Gender.MASCULINE), CADET_MASCULIN(Category.CADET,
+								Gender.MASCULINE), JUVÉNILE_MASCULIN(Category.JUVÉNILE, Gender.MASCULINE);
 
 		private Category category;
 		private Gender gender;
@@ -194,22 +194,22 @@ public class StandingsCreationHelper
 
 	public static void testFormsFile()
 	{
-		String outputFilePrefix = "C:\\Benoit\\Work\\Java\\Badminton\\Registration\\Formulaire_";
+		String outputFilePrefix = "C:\\Benoit\\Work\\Java\\Badminton\\Registration\\Filled\\Formulaire_";
 
 		ArrayList<String> listSchoolNames = PostgreSQLJDBC.getAllSchools();
 
 		for (int i = 0; i < listSchoolNames.size(); i++)
 		{
-			File outputFile = new File(outputFilePrefix + listSchoolNames.get(i) + ".xls");
+			File outputFile = new File(outputFilePrefix + listSchoolNames.get(i) + ".xlsx");
 
-			FormFile formFile = new FormFile(StandingsCreationHelper.class.getResourceAsStream(FORM_TEMPLATE_FILENAME),
-					outputFile, listSchoolNames.get(i));
+//			FormFile formFile = new FormFile(StandingsCreationHelper.class.getResourceAsStream(FORM_TEMPLATE_FILENAME),
+//					outputFile, listSchoolNames.get(i));
+//
+//			formFile.write();
 
-			formFile.write();
-
-			// FormFile testFormFile = new FormFile(new File(outputFilePrefix + listSchoolNames.get(i) + ".xls"),
-			// listSchoolNames.get(i));
-			// testFormFile.read();
+			 FormFile testFormFile = new FormFile(new File(outputFilePrefix + listSchoolNames.get(i) + ".xls"),
+			 listSchoolNames.get(i));
+			 testFormFile.read();
 		}
 	}
 }

@@ -91,11 +91,11 @@ public class S1File
 					case GENDER:
 						if (POIExcelFileProcessor.getCellContents(row.getCell(j)).equals("M"))
 						{
-							gender = Gender.MASCULIN;
+							gender = Gender.MASCULINE;
 						}
 						else if (POIExcelFileProcessor.getCellContents(row.getCell(j)).equals("F"))
 						{
-							gender = Gender.FÉMININ;
+							gender = Gender.FEMININE;
 						}
 						break;
 					}

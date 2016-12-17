@@ -382,7 +382,7 @@ public class StandingsFile
 		}
 
 		// Merge the category headers for the Male players (unsure why it is not needed for the Female players)
-		if (typeOfResult.gender() == Gender.MASCULIN)
+		if (typeOfResult.gender() == Gender.MASCULINE)
 		{
 			CellRangeAddress cellRangeAddress = new CellRangeAddress(currentRow, currentRow,
 					TeamColumn.values()[0].number(),

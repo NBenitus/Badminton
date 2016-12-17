@@ -15,7 +15,6 @@ import org.apache.poi.ss.usermodel.DataValidationConstraint;
 import org.apache.poi.ss.usermodel.DataValidationHelper;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.Name;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -28,13 +27,12 @@ import excelHelper.POIExcelFileProcessor;
 import standings.Player;
 import standings.StandingsCreationHelper.Category;
 import standings.StandingsCreationHelper.Gender;
+import standings.StandingsCreationHelper.TypeOfPlay;
 import standings.StandingsCreationHelper.TypeOfResult;
+import utilities.Utilities;
 
 public class FormFile
 {
-	private static final int MASCULINE_INDEX = 0;
-	private static final int FEMININE_INDEX = 1;
-
 	private static final int FIRST_ROW = 9;
 
 	private static final int DATE_COLUMN = 1;
@@ -49,7 +47,10 @@ public class FormFile
 	private static final Short CONTACT_INFO_HEIGHT = 950;
 
 	private static final String HIDDEN_SHEET_NAME = "Hidden";
-	private static final int NUMBER_DISTINCT_LISTS = 2;
+
+	private static final String OVERANKED_STRING = "Surclassement: ";
+	private static final String NO_PLAYER_STRING = "AUCUN JOUEUR LISTÉ";
+	private static final String LOOKING_FOR_PARTNER_STRING = "RECHERCHE PARTENAIRE";
 
 	private ArrayList<DataValidationConstraint> listConstraints = new ArrayList<DataValidationConstraint>();
 	private ArrayList<DataValidationConstraint> listConstraintsShort = new ArrayList<DataValidationConstraint>();
@@ -73,19 +74,35 @@ public class FormFile
 	}
 
 	public enum Section {
-		SINGLE("SIMPLE MASCULIN"), DOUBLE_MASCULINE("DOUBLE MASCULIN"), DOUBLE_FEMININE("DOUBLE FÉMININ");
+		SINGLE("SIMPLE MASCULIN", Gender.MASCULINE, TypeOfPlay.SINGLE), DOUBLE_MASCULINE("DOUBLE MASCULIN",
+				Gender.MASCULINE,
+				TypeOfPlay.DOUBLE), DOUBLE_FEMININE("DOUBLE FÉMININ", Gender.FEMININE, TypeOfPlay.DOUBLE);
 
 		private static Section[] vals = values();
 		private String headerText;
+		private TypeOfPlay typeOfPlay;
+		private Gender gender;
 
-		Section(String headerText)
+		Section(String headerText, Gender gender, TypeOfPlay typeOfPlay)
 		{
 			this.headerText = headerText;
+			this.gender = gender;
+			this.typeOfPlay = typeOfPlay;
 		}
 
-		public String text()
+		public String headerText()
 		{
 			return headerText;
+		}
+
+		public Gender gender()
+		{
+			return gender;
+		}
+
+		public TypeOfPlay typeOfPlay()
+		{
+			return typeOfPlay;
 		}
 
 		public Section next()
@@ -96,7 +113,7 @@ public class FormFile
 
 	public enum SectionHeader {
 		SINGLE("SIMPLE MASCULIN"), DOUBLE_MASCULINE("DOUBLE MASCULIN"), DOUBLE_FEMININE("DOUBLE FÉMININ"), NAME(
-				"NOM"), EMPTY("");
+				"Nom"), EMPTY("");
 
 		private String headerText;
 
@@ -105,7 +122,7 @@ public class FormFile
 			this.headerText = headerText;
 		}
 
-		public String text()
+		public String headerText()
 		{
 			return headerText;
 		}
@@ -168,87 +185,6 @@ public class FormFile
 	}
 
 	/**
-	 * Populates the hidden sheet that contains name for all the players of each school
-	 * Will be used as a reference for drop-down lists for the main sheets.
-	 *
-	 * @param categoryNumber
-	 *            number of the category (from 0 to 2)
-	 * @param genderNumber
-	 *            number of the gender (from 0 to 1)
-	 * @param listPlayerNames
-	 *            list of the player names for a given category and a given gender
-	 */
-	public void populateHiddenSheet(int categoryNumber, int genderNumber, ArrayList<String> listPlayerNames)
-	{
-		DataValidationConstraint constraint = null;
-		DataValidationHelper validationHelper = null;
-
-		Cell cell = null;
-
-		Sheet hiddenSheet = workbook.getSheet(HIDDEN_SHEET_NAME);
-
-		// Creates the hidden sheet if it does not exist
-		if (hiddenSheet == null)
-		{
-			hiddenSheet = workbook.createSheet(HIDDEN_SHEET_NAME);
-			workbook.setSheetHidden(workbook.getSheetIndex(HIDDEN_SHEET_NAME), Workbook.SHEET_STATE_VERY_HIDDEN);
-		}
-
-		hiddenSheet.protectSheet("Test");
-
-		// Adds the list of player names in the sheet
-		for (int i = 0; i <= listPlayerNames.size(); i++)
-		{
-			String name = null;
-
-
-			if (i == listPlayerNames.size())
-			{
-				// Adds the entry "RECHERCHE PARTENAIRE" which is used for double teams
-				if (listPlayerNames.size() != 0)
-				{
-					name = "RECHERCHE PARTENAIRE";
-				}
-
-				// Adds the entry that there is no player for the given category and gender
-				else
-				{
-					name = "AUCUN JOUEUR LISTÉ";
-				}
-			}
-			else
-			{
-				name = listPlayerNames.get(i);
-			}
-
-			Row row = hiddenSheet.getRow(i);
-
-			// Create row if it does not exist
-			if (row == null)
-			{
-				row = hiddenSheet.createRow(i);
-			}
-
-			cell = row.createCell((categoryNumber * Gender.values().length)+ genderNumber);
-			cell.setCellValue(name);
-		}
-
-		// Set the validation for the drop-down lists
-		validationHelper = hiddenSheet.getDataValidationHelper();
-		constraint = validationHelper
-				.createFormulaListConstraint(HIDDEN_SHEET_NAME + "!$" + (char) (cell.getColumnIndex() + 65)
-						+ "$1:$" + (char) (cell.getColumnIndex() + 65) + "$" + (listPlayerNames.size() + 1));
-
-		listConstraints.add(constraint);
-
-		constraint = validationHelper
-				.createFormulaListConstraint(HIDDEN_SHEET_NAME + "!$" + (char) (cell.getColumnIndex() + 65)
-						+ "$1:$" + (char) (cell.getColumnIndex() + 65) + "$" + Math.max(listPlayerNames.size(), 1));
-
-		listConstraintsShort.add(constraint);
-	}
-
-	/**
 	 * Formats the contact information cells since their parameters are lost during the shiftRows function
 	 *
 	 * @param sheet
@@ -288,6 +224,107 @@ public class FormFile
 	}
 
 	/**
+	 * Gets the formatted name from a cell
+	 *
+	 * @param cell
+	 *            cell that contains the name of a player
+	 * @return formatted (trimmed and Surclassement string removed)
+	 */
+	public String getName(Cell cell)
+	{
+		String name = cell.getStringCellValue().trim();
+
+		if (name.indexOf(OVERANKED_STRING) != -1)
+		{
+			return name.substring(OVERANKED_STRING.length());
+		}
+		else
+		{
+			return name;
+		}
+	}
+
+	/**
+	 * Populates the hidden sheet that contains name for all the players of each school
+	 * Will be used as a reference for drop-down lists for the main sheets.
+	 *
+	 * @param categoryNumber
+	 *            number of the category (from 0 to 2)
+	 * @param genderNumber
+	 *            number of the gender (from 0 to 1)
+	 * @param listPlayerNames
+	 *            list of the player names for a given category and a given gender
+	 * @param listOverankedPlayerNames
+	 *            list of the overanked player names for a given category and a given gender
+	 */
+	public void populateHiddenSheet(int categoryNumber, int genderNumber, ArrayList<String> listPlayerNames,
+			ArrayList<String> listOverankedPlayerNames)
+	{
+		DataValidationConstraint constraint = null;
+		DataValidationHelper validationHelper = null;
+		final String NAME_PREFIX = " ";
+		String name = new String();
+
+		Sheet hiddenSheet = workbook.getSheet(HIDDEN_SHEET_NAME);
+		int columnNumber = (categoryNumber * Gender.values().length) + genderNumber;
+
+		// Creates the hidden sheet if it does not exist
+		if (hiddenSheet == null)
+		{
+			hiddenSheet = workbook.createSheet(HIDDEN_SHEET_NAME);
+			workbook.setSheetHidden(workbook.getSheetIndex(HIDDEN_SHEET_NAME), Workbook.SHEET_STATE_VERY_HIDDEN);
+		}
+
+		hiddenSheet.protectSheet("Test");
+
+		// Adds the list of player names in the sheet
+		for (int i = 0; i < listPlayerNames.size(); i++)
+		{
+			name = listPlayerNames.get(i);
+
+			POIExcelFileProcessor.createCell(hiddenSheet, columnNumber, i, NAME_PREFIX + name);
+
+		}
+
+		// Adds the list of overanked player names in the sheet
+		for (int i = 0; i < listOverankedPlayerNames.size(); i++)
+		{
+			name = OVERANKED_STRING + listOverankedPlayerNames.get(i);
+
+			POIExcelFileProcessor.createCell(hiddenSheet, columnNumber, i + listPlayerNames.size(), NAME_PREFIX + name);
+		}
+
+		// Adds the entry "RECHERCHE PARTENAIRE" which is used for double teams
+		if ((listPlayerNames.size() != 0) || (listOverankedPlayerNames.size() != 0))
+		{
+			name = LOOKING_FOR_PARTNER_STRING;
+		}
+
+		// Adds the entry that there is no player for the given category and gender
+		else
+		{
+			name = NO_PLAYER_STRING;
+		}
+
+		POIExcelFileProcessor.createCell(hiddenSheet, columnNumber,
+				listOverankedPlayerNames.size() + listPlayerNames.size(), NAME_PREFIX + name);
+
+		// Sets the validation for the drop-down lists
+		validationHelper = hiddenSheet.getDataValidationHelper();
+		constraint = validationHelper.createFormulaListConstraint(
+				HIDDEN_SHEET_NAME + "!$" + (char) (columnNumber + 65) + "$1:$" + (char) (columnNumber + 65) + "$"
+						+ (listPlayerNames.size() + listOverankedPlayerNames.size() + 1));
+
+		listConstraints.add(constraint);
+
+		constraint = validationHelper.createFormulaListConstraint(
+				HIDDEN_SHEET_NAME + "!$" + (char) (columnNumber + 65) + "$1:$" + (char) (columnNumber + 65) + "$"
+						+ Math.max(listPlayerNames.size() + listOverankedPlayerNames.size(), 1));
+
+		listConstraintsShort.add(constraint);
+	}
+
+	/**
 	 * Read a list of players from the forms Excel file
 	 *
 	 * @return list of registrations corresponding to the form file
@@ -311,11 +348,9 @@ public class FormFile
 
 				String name = new String();
 				Category category = Category.values()[i];
-
-				boolean isPlayer = true;
-				Section section = Section.SINGLE;
-				Gender gender = Gender.MASCULIN;
 				Player doublePlayer = null;
+
+				Section section = Section.SINGLE;
 
 				// Iterate over the number of rows in the sheet. Start from the second row as the first row is a header
 				for (int j = FIRST_ROW; j < sheet.getLastRowNum(); j++)
@@ -325,99 +360,81 @@ public class FormFile
 					// Check if the row is empty
 					if (row != null)
 					{
+
 						// Read specific cells for each row.
-						for (int k = Column.FIRST_NAME.number(); k <= Column.values().length; k++)
+						for (int k = Column.FIRST_NAME.number(); k <= Column.SECOND_NAME.number(); k++)
 						{
 							// Add the content of the cells to the list of single players and double players
 							if (k == Column.FIRST_NAME.number())
 							{
-								switch (SectionHeader.valueOf(row.getCell(k).getStringCellValue()))
+								if (row.getCell(k).getStringCellValue()
+										.equals(SectionHeader.DOUBLE_MASCULINE.headerText())
+										|| row.getCell(k).getStringCellValue()
+												.equals(SectionHeader.DOUBLE_FEMININE.headerText()))
 								{
+									section = section.next();
 
-								// Category headers
-								case DOUBLE_MASCULINE:
+									// Skip row as the row only contains header text
+									k = Column.values().length + 1;
+								}
+								else if (row.getCell(k).getStringCellValue().equals(SectionHeader.NAME.headerText()))
+								{
+									k = Column.values().length + 1;
+								}
+								else if (row.getCell(k).getStringCellValue().equals(SectionHeader.EMPTY.headerText()))
+								{
+									// Do nothing
+								}
+								else
+								{
+									name = getName(row.getCell(k));
 
-									isPlayer = false;
-
-									section = Section.DOUBLE_MASCULINE;
-									gender = Gender.MASCULIN;
-
-									break;
-
-								case DOUBLE_FEMININE:
-
-									isPlayer = false;
-
-									section = Section.DOUBLE_FEMININE;
-									gender = Gender.FÉMININ;
-
-									break;
-
-								// Subsection header
-								case NAME:
-								case EMPTY:
-
-									isPlayer = false;
-									break;
-
-								default:
-									isPlayer = true;
-
-									name = row.getCell(k).getStringCellValue();
-
-									if (!name.equals(""))
+									if (!name.equals("") && !name.equals(NO_PLAYER_STRING))
 									{
-
 										// Add player to list of single players
 										if (section == Section.SINGLE)
 										{
-											listSinglePlayers.add(new Player(name, schoolName, gender, category));
+											listSinglePlayers
+													.add(new Player(name, schoolName, Gender.MASCULINE, category));
 										}
-
 										// Add player to list of double players
 										else
 										{
-											doublePlayer = new Player(name, schoolName, gender, category);
-										}
-									}
 
-									break;
+											doublePlayer = new Player(name, schoolName, section.gender(), category);
+										}
+
+									}
+									else
+									{
+										doublePlayer = null;
+									}
 								}
 							}
 
 							else if (k == Column.SECOND_NAME.number())
 							{
-
 								// Check if cell exists in row
 								if (k < row.getLastCellNum())
 								{
-									// Check if cell is for a player, instead of a header
-									if (isPlayer == true)
-									{
-										name = row.getCell(k).getStringCellValue();
+									name = getName(row.getCell(k));
 
-										if (!name.equals(""))
+									if (!name.equals("") && !name.equals(NO_PLAYER_STRING))
+									{
+										// Add player to list of single players
+										if (section == Section.SINGLE)
 										{
-											// Add player to list of single players
-											if (section == Section.SINGLE)
+											listSinglePlayers
+													.add(new Player(name, schoolName, Gender.FEMININE, category));
+										}
+										else
+										{
+											// Add players to list of double players
+											if (!(name.equals(LOOKING_FOR_PARTNER_STRING)
+													&& doublePlayer.getName().equals(LOOKING_FOR_PARTNER_STRING)))
 											{
-												listSinglePlayers.add(new Player(name, schoolName, gender, category));
-											}
-											else
-											{
-												// Both players are specified for a double team
-												// Add players to list of double players
-												if (!name.equals("RECHERCHE PARTENAIRE"))
-												{
-													listDoubleTeams.add(new DoubleTeam(doublePlayer,
-															new Player(name, schoolName, gender, category)));
-												}
-												// A player needs a partner for a double team
-												else
-												{
-													listDoubleTeams.add(new DoubleTeam(doublePlayer, new Player(
-															"RECHERCHE PARTENAIRE", schoolName, gender, category)));
-												}
+												listDoubleTeams.add(new DoubleTeam(doublePlayer,
+														new Player(name, schoolName, section.gender(), category)));
 											}
 										}
 									}
@@ -429,8 +446,6 @@ public class FormFile
 
 				registrationList.add(new Registration(listSinglePlayers, listDoubleTeams));
 			}
-
-			// Code to close objects
 		}
 		catch (
 
@@ -522,7 +537,6 @@ public class FormFile
 
 	/**
 	 * Unlocks cells in the section.
-	 * CURRENTLY NOT WORKING (HSSF VS XSSF)???
 	 *
 	 * @param sheet
 	 *            sheet that contains the cells to unlocked
@@ -537,19 +551,12 @@ public class FormFile
 		unlockedCellStyle.setLocked(false);
 
 		// Iterate for each row in the section
-		for (int i = startRow; i < startRow + numberOfRows; i++)
+		for (int i = startRow; i <= startRow + numberOfRows; i++)
 		{
-			Row row = sheet.getRow(i);
-
 			// Iterate for each cell in the section
-			for (int j = 0; j < row.getLastCellNum(); j++)
+			for (int j = 0; j <= Column.SECOND_NAME.number(); j++)
 			{
-				Cell cell = row.getCell(j);
-
-				if (cell != null)
-				{
-					cell.setCellStyle(unlockedCellStyle);
-				}
+				POIExcelFileProcessor.createCell(sheet, j, i, "", unlockedCellStyle);
 			}
 		}
 	}
@@ -568,15 +575,29 @@ public class FormFile
 		{
 			Sheet sheet = workbook.getSheet(TypeOfResult.values()[i].category().text());
 			validationHelper = sheet.getDataValidationHelper();
-			// sheet.protectSheet("Test");
+			sheet.protectSheet("Test");
 
-			ArrayList<ArrayList<String>> listsPlayers = new ArrayList<ArrayList<String>>();
+			ArrayList<String> listMalePlayerNames = new ArrayList<String>();
+			ArrayList<String> listOverankedMalePlayerNames = new ArrayList<String>();
+			ArrayList<String> listFemalePlayerNames = new ArrayList<String>();
+			ArrayList<String> listOverankedFemalePlayerNames = new ArrayList<String>();
 
-			listsPlayers.add(PostgreSQLJDBC.getPlayersByFilter(schoolName, Category.values()[i],
-					Gender.values()[MASCULINE_INDEX]));
+			listMalePlayerNames = PostgreSQLJDBC.getPlayersByFilter(schoolName, Category.values()[i], Gender.MASCULINE);
 
-			listsPlayers.add(PostgreSQLJDBC.getPlayersByFilter(schoolName, Category.values()[i],
-					Gender.values()[FEMININE_INDEX]));
+			if (Utilities.getPreviousCategory(Category.values()[i]) != null)
+			{
+				listOverankedMalePlayerNames = PostgreSQLJDBC.getPlayersByFilter(schoolName,
+						Utilities.getPreviousCategory(Category.values()[i]), Gender.MASCULINE);
+			}
+
+			listFemalePlayerNames = PostgreSQLJDBC.getPlayersByFilter(schoolName, Category.values()[i],
+					Gender.FEMININE);
+
+			if (Utilities.getPreviousCategory(Category.values()[i]) != null)
+			{
+				listOverankedFemalePlayerNames = PostgreSQLJDBC.getPlayersByFilter(schoolName,
+						Utilities.getPreviousCategory(Category.values()[i]), Gender.FEMININE);
+			}
 
 			setSchoolName(sheet);
 			setCurrentDate(sheet);
@@ -600,8 +621,8 @@ public class FormFile
 
 				case SINGLE:
 
-					numberRows = Math.max(listsPlayers.get(MASCULINE_INDEX).size(),
-							listsPlayers.get(FEMININE_INDEX).size());
+					numberRows = Math.max(listMalePlayerNames.size() + listOverankedMalePlayerNames.size(),
+							listFemalePlayerNames.size() + listOverankedFemalePlayerNames.size());
 
 					constraintIndexes[0] = i * Gender.values().length;
 					constraintIndexes[1] = (i * Gender.values().length) + 1;
@@ -610,7 +631,7 @@ public class FormFile
 
 				case DOUBLE_MASCULINE:
 
-					numberRows = (listsPlayers.get(MASCULINE_INDEX).size() / 2) + 1;
+					numberRows = ((listMalePlayerNames.size() + listOverankedMalePlayerNames.size()) / 2) + 1;
 
 					constraintIndexes[0] = constraintIndexes[1] = i * Gender.values().length;
 
@@ -618,16 +639,21 @@ public class FormFile
 
 				case DOUBLE_FEMININE:
 
-					numberRows = (listsPlayers.get(FEMININE_INDEX).size() / 2) + 1;
+					numberRows = ((listFemalePlayerNames.size() + listOverankedFemalePlayerNames.size()) / 2) + 1;
 
 					constraintIndexes[0] = constraintIndexes[1] = (i * Gender.values().length) + 1;
 
 					break;
 				}
 
-				sheet.shiftRows(firstRow, sheet.getLastRowNum(), numberRows);
+				// Shift rows if the number of players for the section is not empty
+				if (numberRows != 0)
+				{
+					sheet.shiftRows(firstRow, sheet.getLastRowNum(), numberRows);
+				}
+
+				unlockCells(sheet, firstRow, numberRows);
 				setSectionBorder(sheet, firstRow, numberRows);
-				// unlockCells(workbook, sheet, firstRow, numberRows);
 
 				// Add the "ET" text in the middle column for double play
 				if ((Section.values()[j] == Section.DOUBLE_MASCULINE)
@@ -642,26 +668,40 @@ public class FormFile
 
 				CellRangeAddressList[] addressList = new CellRangeAddressList[2];
 
-				addressList[MASCULINE_INDEX] = new CellRangeAddressList(firstRow, firstRow + numberRows,
-						Column.FIRST_NAME.number(), Column.FIRST_NAME.number());
-				addressList[FEMININE_INDEX] = new CellRangeAddressList(firstRow, firstRow + numberRows,
-						Column.SECOND_NAME.number(), Column.SECOND_NAME.number());
+				addressList[0] = new CellRangeAddressList(firstRow, firstRow + numberRows, Column.FIRST_NAME.number(),
+						Column.FIRST_NAME.number());
+				addressList[1] = new CellRangeAddressList(firstRow, firstRow + numberRows, Column.SECOND_NAME.number(),
+						Column.SECOND_NAME.number());
 
 				// Iterate for each gender
 				for (int k = 0; k < Gender.values().length; k++)
 				{
 					DataValidation validation = null;
 
-					if (Section.values()[j] == Section.SINGLE)
+					ArrayList<String> listPlayerNames = null;
+					ArrayList<String> listOverankedPlayerNames = null;
+
+					if (Gender.values()[k] == Gender.MASCULINE)
 					{
-						populateHiddenSheet(i, k, listsPlayers.get(k));
-						validation = validationHelper
-							.createValidation(listConstraintsShort.get(constraintIndexes[k]), addressList[k]);
+						listPlayerNames = listMalePlayerNames;
+						listOverankedPlayerNames = listOverankedMalePlayerNames;
 					}
 					else
 					{
-						validation = validationHelper
-								.createValidation(listConstraints.get(constraintIndexes[k]), addressList[k]);
+						listPlayerNames = listFemalePlayerNames;
+						listOverankedPlayerNames = listOverankedFemalePlayerNames;
+					}
+
+					if (Section.values()[j] == Section.SINGLE)
+					{
+						populateHiddenSheet(i, k, listPlayerNames, listOverankedPlayerNames);
+						validation = validationHelper.createValidation(listConstraintsShort.get(constraintIndexes[k]),
+								addressList[k]);
+					}
+					else
+					{
+						validation = validationHelper.createValidation(listConstraints.get(constraintIndexes[k]),
+								addressList[k]);
 					}
 
 					sheet.addValidationData(validation);

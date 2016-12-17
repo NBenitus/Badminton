@@ -58,22 +58,22 @@ public class Utilities
 
 	public static Category getPreviousCategory(Category category)
 	{
-		Category nextCategory = null;
+		Category previousCategory = null;
 
 		switch (category)
 		{
 		case BENJAMIN:
-			nextCategory = Category.BENJAMIN;
+			previousCategory = null;
 			break;
 		case CADET:
-			nextCategory = Category.BENJAMIN;
+			previousCategory = Category.BENJAMIN;
 			break;
 		case JUVÉNILE:
-			nextCategory = Category.CADET;
+			previousCategory = Category.CADET;
 			break;
 		}
 
-		return nextCategory;
+		return previousCategory;
 	}
 
 	/**

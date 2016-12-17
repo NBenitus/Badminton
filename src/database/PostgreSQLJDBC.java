@@ -86,7 +86,7 @@ public class PostgreSQLJDBC
 				stm.setString(2, listPlayers.get(i).getSchoolName());
 				stm.setString(3, listPlayers.get(i).getCategory().text());
 				stm.setInt(4, 4);
-				stm.setString(5, TypeOfPlay.SIMPLE.text());
+				stm.setString(5, TypeOfPlay.SINGLE.text());
 				stm.setBoolean(6, false);
 
 				stm.executeUpdate();
@@ -258,12 +258,12 @@ public class PostgreSQLJDBC
 								+ "ON t1.PlayerId_fkey = t2.PlayerId_fkey "
 								+ "GROUP BY t1.PlayerId_fkey, t2.PlayerId_fkey, SumScoresSimple, SumScoresDouble "
 								+ "ORDER BY SumScoresTotal DESC) ttotal " + "LEFT JOIN ( "
-								+ individualResultsGetSchool(TypeOfPlay.SIMPLE)
+								+ individualResultsGetSchool(TypeOfPlay.SINGLE)
 								+ "ON ttotal.PlayerId_fkey=tschool2.PlayerId_fkey");
 
 				stm.setString(1, typeOfResult.category().text());
 				stm.setString(2, typeOfResult.gender().text());
-				stm.setString(3, TypeOfPlay.SIMPLE.text());
+				stm.setString(3, TypeOfPlay.SINGLE.text());
 				stm.setString(4, typeOfResult.category().text());
 				stm.setString(5, typeOfResult.gender().text());
 				stm.setString(6, TypeOfPlay.DOUBLE.text());
@@ -365,24 +365,23 @@ public class PostgreSQLJDBC
 	 */
 	public static ArrayList<String> getPlayersByFilter(String schoolName, Category category, Gender gender)
 	{
-		ArrayList<String> listPlayersNames = new ArrayList<String>();
+		ArrayList<String> listPlayerNames = new ArrayList<String>();
 
 		try
 		{
 			openDatabase();
 
 			PreparedStatement stm = connection.prepareStatement("SELECT Name FROM Player "
-					+ "WHERE SchoolName=? AND (Category=? OR Category=?) AND Gender=?");
+					+ "WHERE SchoolName=? AND Category=? AND Gender=? ORDER BY Name");
 
 			stm.setString(1, schoolName);
 			stm.setString(2, category.text());
-			stm.setString(3, Utilities.getPreviousCategory(category).text());
-			stm.setString(4, gender.text());
+			stm.setString(3, gender.text());
 			ResultSet resultSet = stm.executeQuery();
 
 			while (resultSet.next())
 			{
-				listPlayersNames.add(resultSet.getString("Name"));
+				listPlayerNames.add(resultSet.getString("Name"));
 			}
 
 			stm.close();
@@ -398,13 +397,13 @@ public class PostgreSQLJDBC
 			System.exit(0);
 		}
 
-		return listPlayersNames;
+		return listPlayerNames;
 	}
 
 	/**
 	 * Gets the list of all subscribed players
 	 *
-	 * @return number of pools
+	 * @return list of all the players
 	 */
 	public static ArrayList<Player> getAllPlayers()
 	{
@@ -442,6 +441,7 @@ public class PostgreSQLJDBC
 		return listPlayers;
 	}
 
+
 	/**
 	 * Gets the list of all schools
 	 *
@@ -478,6 +478,56 @@ public class PostgreSQLJDBC
 		}
 
 		return listSchoolNames;
+	}
+
+	/**
+	 * Gets the list of all registered players based on different filters
+	 *
+	 * @return list of players based on different filter
+	 */
+	public static ArrayList<Player> getRegisteredPlayersByFilter(Category category, Gender gender, TypeOfPlay typeOfPlay,
+			int tournamentNumber)
+	{
+		ArrayList<Player> listPlayers = new ArrayList<Player>();
+
+		try
+		{
+			openDatabase();
+
+			PreparedStatement stm = connection.prepareStatement(
+					"SELECT ID, Name, SchoolName, Gender, Category "
+					+ "FROM Player "
+					+ "LEFT JOIN Result ON Player.ID=Result.PlayerID_fkey "
+					+ "WHERE Player.Category=? AND Gender=? AND TypeOfPlay=? AND TournamentNumber=? "
+					+ "ORDER BY Score DESC");
+
+			stm.setString(1, category.text());
+			stm.setString(2, gender.text());
+			stm.setString(3, typeOfPlay.text());
+			stm.setInt(4, tournamentNumber);
+			ResultSet resultSet = stm.executeQuery();
+
+			while (resultSet.next())
+			{
+				listPlayers.add(new Player(resultSet.getString("Id"), resultSet.getString("Name"),
+						resultSet.getString("SchoolName"), Gender.valueOf(resultSet.getString("Gender").toUpperCase()),
+						Category.valueOf(resultSet.getString("Category").toUpperCase())));
+			}
+
+			resultSet.close();
+			stm.close();
+
+			closeDatabase();
+		}
+
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			LoggerWrapper.myLogger.severe(e.toString());
+			System.exit(0);
+		}
+
+		return listPlayers;
 	}
 
 	/**
@@ -679,7 +729,7 @@ public class PostgreSQLJDBC
 		return "SELECT SchoolName_fkey, SumScoresByTournament, TournamentNumber " + "FROM( "
 				+ "SELECT SchoolName_fkey, AverageSchoolScores, sum(AverageSchoolScores) "
 				+ "over (partition by SchoolName_fkey, TournamentNumber) as SumScoresByTournament, TournamentNumber "
-				+ "FROM ( " + teamResultGetScoresByTypeOfPlayQuery(TypeOfPlay.SIMPLE, typeOfResult) + "UNION ALL "
+				+ "FROM ( " + teamResultGetScoresByTypeOfPlayQuery(TypeOfPlay.SINGLE, typeOfResult) + "UNION ALL "
 				+ teamResultGetScoresByTypeOfPlayQuery(TypeOfPlay.DOUBLE, typeOfResult) + ") tinside) tinside2 "
 				+ "WHERE SchoolName_fkey != 'CSD' AND SumScoresByTournament > 0 "
 				+ "GROUP BY SchoolName_fkey, TournamentNumber, SumScoresByTournament "

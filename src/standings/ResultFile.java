@@ -92,7 +92,7 @@ public class ResultFile
 		String id = new String();
 		String schoolName = new String();
 		Category category = null;
-		TypeOfPlay typeOfPlay = TypeOfPlay.SIMPLE; // Initializing variable
+		TypeOfPlay typeOfPlay = TypeOfPlay.SINGLE; // Initializing variable
 
 		Row row = null;
 
