@@ -2,7 +2,6 @@ package standings;
 
 public class IndividualCombinedResult extends IndividualResult
 {
-
 	private int singleScore;
 	private int doubleScore;
 
@@ -22,12 +21,29 @@ public class IndividualCombinedResult extends IndividualResult
 	 * @param rank
 	 *            rank of the player
 	 */
-	public IndividualCombinedResult(String playerName, String schoolName, int singleScore, int doubleScore,
+	public IndividualCombinedResult(String id, String playerName, String schoolName, int singleScore, int doubleScore,
 			int totalScore, int rank)
 	{
-		super(playerName, schoolName, totalScore, rank);
+		super(id, playerName, schoolName, totalScore, rank);
 		this.singleScore = singleScore;
 		this.doubleScore = doubleScore;
+	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		IndividualCombinedResult other = (IndividualCombinedResult) obj;
+		if (doubleScore != other.doubleScore)
+			return false;
+		if (singleScore != other.singleScore)
+			return false;
+		return true;
 	}
 
 	public int getDoubleScore()
@@ -38,5 +54,15 @@ public class IndividualCombinedResult extends IndividualResult
 	public int getSingleScore()
 	{
 		return singleScore;
+	}
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + doubleScore;
+		result = prime * result + singleScore;
+		return result;
 	}
 }

@@ -3,11 +3,13 @@ package registration;
 import java.util.ArrayList;
 
 import standings.Player;
+import standings.StandingsCreationHelper.Category;
 
 public class Registration
 {
 	private ArrayList<Player> singlePlayers;
 	private ArrayList<DoubleTeam> doubleTeams;
+	private Category category;
 
 	/**
 	  * Constructor
@@ -16,11 +18,19 @@ public class Registration
 	  *            list of single players registering to the next tournament
 	  * @param doubleTeams
 	  *            list of doubles teams registering to the next tournament
+	  * @param category
+	  *            category of the list of registered players
 	  */
-	public Registration(ArrayList<Player> singlePlayers, ArrayList<DoubleTeam> doubleTeams)
+	public Registration(ArrayList<Player> singlePlayers, ArrayList<DoubleTeam> doubleTeams, Category category)
 	{
 		this.singlePlayers = singlePlayers;
 		this.doubleTeams = doubleTeams;
+		this.category = category;
+	}
+
+	public Category getCategory()
+	{
+		return category;
 	}
 
 	public ArrayList<DoubleTeam> getDoubleTeams()
@@ -31,6 +41,11 @@ public class Registration
 	public ArrayList<Player> getSinglePlayers()
 	{
 		return singlePlayers;
+	}
+
+	public void setCategory(Category category)
+	{
+		this.category = category;
 	}
 
 	public void setDoubleTeams(ArrayList<DoubleTeam> doubleTeams)

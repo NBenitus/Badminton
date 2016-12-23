@@ -51,6 +51,37 @@ public class TeamResult
 		scores.add(score);
 	}
 
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		TeamResult other = (TeamResult) obj;
+		if (rank != other.rank)
+			return false;
+		if (schoolName == null)
+		{
+			if (other.schoolName != null)
+				return false;
+		}
+		else if (!schoolName.equals(other.schoolName))
+			return false;
+		if (scores == null)
+		{
+			if (other.scores != null)
+				return false;
+		}
+		else if (!scores.equals(other.scores))
+			return false;
+		if (Float.floatToIntBits(totalScore) != Float.floatToIntBits(other.totalScore))
+			return false;
+		return true;
+	}
+
 	public int getRank()
 	{
 		return rank;
@@ -69,6 +100,18 @@ public class TeamResult
 	public float getTotalScore()
 	{
 		return totalScore;
+	}
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + rank;
+		result = prime * result + ((schoolName == null) ? 0 : schoolName.hashCode());
+		result = prime * result + ((scores == null) ? 0 : scores.hashCode());
+		result = prime * result + Float.floatToIntBits(totalScore);
+		return result;
 	}
 
 	// To do: verify if this method is really worth it

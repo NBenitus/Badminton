@@ -2,6 +2,7 @@ package standings;
 
 import java.io.File;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -166,8 +167,10 @@ public class StandingsFile
 
 	/**
 	 * Writes all the sheets (individual and team)
+	 *
+	 * @throws SQLException
 	 */
-	public void write()
+	public void write() throws SQLException
 	{
 		// Iterate over all the individual sheets (and the one team result sheet)
 		for (int i = 0; i < individualResultSheets.size(); i++)
@@ -210,9 +213,11 @@ public class StandingsFile
 	 *            type of result (ex: Benjamin masculin) to write
 	 * @param currentFirstColumnNumber
 	 *            type of play to write (ex: Single)
+	 *
+	 * @throws SQLException
 	 */
 	public void writeIndividualResultSheet(IndividualResultSheet individualResultSheet,
-			TypeOfResult typeOfResult, int currentFirstColumnNumber)
+			TypeOfResult typeOfResult, int currentFirstColumnNumber) throws SQLException
 	{
 		ArrayList<IndividualResult> listIndividualResults = PostgreSQLJDBC.getIndividualResults(typeOfResult,
 				individualResultSheet.getTypeOfPlay());
@@ -338,8 +343,10 @@ public class StandingsFile
 	 *
 	 * @param typeOfResult
 	 *            type of result (ex: Benjamin masculin) to write
+	 *
+	 * @throws SQLException
 	 */
-	public void writeTeamResultSheet(TypeOfResult typeOfResult)
+	public void writeTeamResultSheet(TypeOfResult typeOfResult) throws SQLException
 	{
 		Sheet sheet = workbook.getSheet(teamResultSheet.getTemplateSheetName());
 
@@ -382,7 +389,7 @@ public class StandingsFile
 		}
 
 		// Merge the category headers for the Male players (unsure why it is not needed for the Female players)
-		if (typeOfResult.gender() == Gender.MASCULINE)
+		if (typeOfResult.gender() == Gender.MASCULIN)
 		{
 			CellRangeAddress cellRangeAddress = new CellRangeAddress(currentRow, currentRow,
 					TeamColumn.values()[0].number(),
@@ -409,7 +416,7 @@ public class StandingsFile
 			{
 				float score;
 
-				// Unsure what this does
+				// Display the score as 0 if there is no corresponding entry for the tournament
 				if (teamsResults.get(i).getScores().size() < (j + 1))
 				{
 					score = 0;

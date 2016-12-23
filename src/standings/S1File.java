@@ -69,33 +69,35 @@ public class S1File
 			if (row != null)
 			{
 				// Read specific cells for each row. Stopping at the 4th column since other fields are not necessary
-				for (int j = 0; j <= Column.values().length; j++)
+				for (int j = 0; j < Column.values().length; j++)
 				{
 					switch (Column.values()[j])
 					{
 					case CATEGORY:
-						category = Category.valueOf(POIExcelFileProcessor.getCellContents(row.getCell(j)).toUpperCase());
+						category = Category.valueOf(POIExcelFileProcessor
+								.getCellContents(row.getCell(Column.values()[j].number())).toUpperCase());
 						break;
 					case SCHOOL_NAME:
-						schoolName = POIExcelFileProcessor.getCellContents(row.getCell(j));
+						schoolName = POIExcelFileProcessor.getCellContents(row.getCell(Column.values()[j].number()));
 						break;
 					case ID:
-						id = POIExcelFileProcessor.getCellContents(row.getCell(j));
+						id = POIExcelFileProcessor.getCellContents(row.getCell(Column.values()[j].number()));
 						break;
 					case LAST_NAME:
-						lastName = POIExcelFileProcessor.getCellContents(row.getCell(j));
+						lastName = POIExcelFileProcessor.getCellContents(row.getCell(Column.values()[j].number()));
 						break;
 					case FIRST_NAME:
-						firstName = POIExcelFileProcessor.getCellContents(row.getCell(j));
+						firstName = POIExcelFileProcessor.getCellContents(row.getCell(Column.values()[j].number()));
 						break;
 					case GENDER:
-						if (POIExcelFileProcessor.getCellContents(row.getCell(j)).equals("M"))
+						if (POIExcelFileProcessor.getCellContents(row.getCell(Column.values()[j].number())).equals("M"))
 						{
-							gender = Gender.MASCULINE;
+							gender = Gender.MASCULIN;
 						}
-						else if (POIExcelFileProcessor.getCellContents(row.getCell(j)).equals("F"))
+						else if (POIExcelFileProcessor.getCellContents(row.getCell(Column.values()[j].number()))
+								.equals("F"))
 						{
-							gender = Gender.FEMININE;
+							gender = Gender.FÉMININ;
 						}
 						break;
 					}

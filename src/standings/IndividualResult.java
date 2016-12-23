@@ -2,6 +2,7 @@ package standings;
 
 public class IndividualResult
 {
+	private String id;
 	private String playerName;
 	private String schoolName;
 	private int score;
@@ -19,17 +20,61 @@ public class IndividualResult
 	  * @param rank
 	  *            rank of the player
 	  */
-	public IndividualResult(String playerName, String schoolName, int score, int rank)
+	public IndividualResult(String id, String playerName, String schoolName, int score, int rank)
 	{
+		this.id = id;
 		this.playerName = playerName;
 		this.schoolName = schoolName;
 		this.score = score;
 		this.rank = rank;
 	}
 
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		IndividualResult other = (IndividualResult) obj;
+		if (id == null)
+		{
+			if (other.id != null)
+				return false;
+		}
+		else if (!id.equals(other.id))
+			return false;
+		if (playerName == null)
+		{
+			if (other.playerName != null)
+				return false;
+		}
+		else if (!playerName.equals(other.playerName))
+			return false;
+		if (rank != other.rank)
+			return false;
+		if (schoolName == null)
+		{
+			if (other.schoolName != null)
+				return false;
+		}
+		else if (!schoolName.equals(other.schoolName))
+			return false;
+		if (score != other.score)
+			return false;
+		return true;
+	}
+
 	public int getDoubleScore()
 	{
 		return -1;
+	}
+
+	public String getId()
+	{
+		return id;
 	}
 
 	public String getPlayerName()
@@ -55,6 +100,24 @@ public class IndividualResult
 	public int getScore()
 	{
 		return score;
+	}
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + ((playerName == null) ? 0 : playerName.hashCode());
+		result = prime * result + rank;
+		result = prime * result + ((schoolName == null) ? 0 : schoolName.hashCode());
+		result = prime * result + score;
+		return result;
+	}
+
+	public void setId(String id)
+	{
+		this.id = id;
 	}
 
 	public void setPlayerName(String playerName)

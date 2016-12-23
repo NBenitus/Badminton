@@ -2,6 +2,7 @@ package registration;
 
 import java.io.File;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import org.apache.poi.ss.usermodel.DataValidation;
 import org.apache.poi.ss.usermodel.DataValidationConstraint;
 import org.apache.poi.ss.usermodel.DataValidationHelper;
 import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -33,6 +35,8 @@ import utilities.Utilities;
 
 public class FormFile
 {
+	private static final String FORM_FILE_TEMPLATE_FILENAME = "/resources/Template/FormFile_Template.xlsx";
+
 	private static final int FIRST_ROW = 9;
 
 	private static final int DATE_COLUMN = 1;
@@ -52,10 +56,18 @@ public class FormFile
 	private static final String NO_PLAYER_STRING = "AUCUN JOUEUR LISTÉ";
 	private static final String LOOKING_FOR_PARTNER_STRING = "RECHERCHE PARTENAIRE";
 
+	private static final int NUMBER_OF_ID_DIGTS = 3;
+
+	private static final String FONT_NAME = "Arial";
+	private static final Short FONT_SIZE = 12;
+
 	private ArrayList<DataValidationConstraint> listConstraints = new ArrayList<DataValidationConstraint>();
 	private ArrayList<DataValidationConstraint> listConstraintsShort = new ArrayList<DataValidationConstraint>();
 
 	private Workbook workbook;
+
+	private File file;
+	private String schoolName;
 
 	public enum Column {
 		FIRST_NAME(1), MIDDLE(2), SECOND_NAME(3);
@@ -74,9 +86,9 @@ public class FormFile
 	}
 
 	public enum Section {
-		SINGLE("SIMPLE MASCULIN", Gender.MASCULINE, TypeOfPlay.SINGLE), DOUBLE_MASCULINE("DOUBLE MASCULIN",
-				Gender.MASCULINE,
-				TypeOfPlay.DOUBLE), DOUBLE_FEMININE("DOUBLE FÉMININ", Gender.FEMININE, TypeOfPlay.DOUBLE);
+		SINGLE("SIMPLE MASCULIN", Gender.MASCULIN, TypeOfPlay.SINGLE), DOUBLE_MASCULINE("DOUBLE MASCULIN",
+				Gender.MASCULIN,
+				TypeOfPlay.DOUBLE), DOUBLE_FEMININE("DOUBLE FÉMININ", Gender.FÉMININ, TypeOfPlay.DOUBLE);
 
 		private static Section[] vals = values();
 		private String headerText;
@@ -128,28 +140,6 @@ public class FormFile
 		}
 	}
 
-	private File file;
-	private InputStream inputStream;
-	private File outputFile;
-	private String schoolName;
-
-	/**
-	 * Constructor.
-	 *
-	 * @param inputStream
-	 *            input stream to the form file's template
-	 * @param outputFile
-	 *            form file created
-	 * @param schoolName
-	 *            name of the school for which the form is associated
-	 */
-	public FormFile(InputStream inputStream, File outputFile, String schoolName)
-	{
-		this.inputStream = inputStream;
-		this.outputFile = outputFile;
-		this.schoolName = schoolName;
-	}
-
 	/**
 	 * Constructor.
 	 *
@@ -161,7 +151,6 @@ public class FormFile
 	public FormFile(File file, String schoolName)
 	{
 		this.file = file;
-		this.outputFile = null;
 		this.schoolName = schoolName;
 	}
 
@@ -177,10 +166,19 @@ public class FormFile
 	 */
 	public void addMiddleColumnText(Sheet sheet, int firstRow, int numberRows)
 	{
+		Font normalFont = workbook.createFont();
+		normalFont.setFontHeightInPoints(FONT_SIZE);
+		normalFont.setFontName(FONT_NAME);
+		normalFont.setBold(false);
+
+		// Create cell style for individual results cells
+		CellStyle cellStyle = workbook.createCellStyle();
+		cellStyle.setFont(normalFont);
+
 		// Iterate for each row in the double section
-		for (int i = firstRow; i <= firstRow + numberRows; i++)
+		for (int i = 0; i <= numberRows; i++)
 		{
-			POIExcelFileProcessor.createCell(sheet, Column.MIDDLE.number(), i, "ET");
+			POIExcelFileProcessor.createCell(sheet, Column.MIDDLE.number(), firstRow + i, "ET", cellStyle);
 		}
 	}
 
@@ -224,24 +222,81 @@ public class FormFile
 	}
 
 	/**
+	 * Formats the name to be displayed if there are two identical names in one school
+	 * WARNING: What about the same category?
+	 *
+	 * @param playerInCategory
+	 *            player to verify the presence of a duplicate
+	 * @param playersInNextCategory
+	 *            list of players in the next category
+	 */
+	public String formatName(Player playerInCategory, ArrayList<Player> playersInNextCategory)
+	{
+		String name = playerInCategory.getName();
+		boolean isMatchingPlayer = false;
+
+		// Iterate over each player in the list of players for the next category
+		for (int i = 0; i < playersInNextCategory.size(); i++)
+		{
+			if (name.equals(playersInNextCategory.get(i).getName()))
+			{
+				isMatchingPlayer = true;
+			}
+		}
+
+		if (isMatchingPlayer)
+		{
+			name += " (" + playerInCategory.getId().substring(playerInCategory.getId().length() - NUMBER_OF_ID_DIGTS) + ")";
+		}
+
+		return name;
+	}
+
+	/**
 	 * Gets the formatted name from a cell
 	 *
 	 * @param cell
 	 *            cell that contains the name of a player
 	 * @return formatted (trimmed and Surclassement string removed)
 	 */
-	public String getName(Cell cell)
+	public String getName(String cellContent)
 	{
-		String name = cell.getStringCellValue().trim();
+		// Trim the leading space in front of the name
+		String name = cellContent.trim();
 
+		// Remove the Overanked string in front of the name if present
 		if (name.indexOf(OVERANKED_STRING) != -1)
 		{
-			return name.substring(OVERANKED_STRING.length());
+			name = name.substring(OVERANKED_STRING.length());
 		}
-		else
+
+		// Get only the name component if an ID is present
+		if (name.indexOf("(") != -1)
 		{
-			return name;
+			name = name.substring(0, name.indexOf("(") - 1);
 		}
+
+		return name;
+	}
+
+	/**
+	 * Gets the formatted id from a cell
+	 *
+	 * @param cellContent
+	 *            content of the cell (name and possibly id)
+	 * @return id
+	 */
+	public String getID(String cellContent)
+	{
+		String id = null;
+
+		// Get the ID if present
+		if (cellContent.indexOf("(") != -1)
+		{
+			id = cellContent.substring(cellContent.indexOf("(") + 1, cellContent.indexOf(")"));
+		}
+
+		return id;
 	}
 
 	/**
@@ -252,13 +307,13 @@ public class FormFile
 	 *            number of the category (from 0 to 2)
 	 * @param genderNumber
 	 *            number of the gender (from 0 to 1)
-	 * @param listPlayerNames
+	 * @param players
 	 *            list of the player names for a given category and a given gender
-	 * @param listOverankedPlayerNames
+	 * @param overankedPlayers
 	 *            list of the overanked player names for a given category and a given gender
 	 */
-	public void populateHiddenSheet(int categoryNumber, int genderNumber, ArrayList<String> listPlayerNames,
-			ArrayList<String> listOverankedPlayerNames)
+	public void populateHiddenSheet(int categoryNumber, int genderNumber, ArrayList<Player> players,
+			ArrayList<Player> overankedPlayers)
 	{
 		DataValidationConstraint constraint = null;
 		DataValidationHelper validationHelper = null;
@@ -275,27 +330,26 @@ public class FormFile
 			workbook.setSheetHidden(workbook.getSheetIndex(HIDDEN_SHEET_NAME), Workbook.SHEET_STATE_VERY_HIDDEN);
 		}
 
-		hiddenSheet.protectSheet("Test");
-
 		// Adds the list of player names in the sheet
-		for (int i = 0; i < listPlayerNames.size(); i++)
+		for (int i = 0; i < players.size(); i++)
 		{
-			name = listPlayerNames.get(i);
+			name = players.get(i).getName();
+
+			name = formatName(players.get(i), overankedPlayers);
 
 			POIExcelFileProcessor.createCell(hiddenSheet, columnNumber, i, NAME_PREFIX + name);
-
 		}
 
 		// Adds the list of overanked player names in the sheet
-		for (int i = 0; i < listOverankedPlayerNames.size(); i++)
+		for (int i = 0; i < overankedPlayers.size(); i++)
 		{
-			name = OVERANKED_STRING + listOverankedPlayerNames.get(i);
+			name = OVERANKED_STRING + formatName(overankedPlayers.get(i), players);
 
-			POIExcelFileProcessor.createCell(hiddenSheet, columnNumber, i + listPlayerNames.size(), NAME_PREFIX + name);
+			POIExcelFileProcessor.createCell(hiddenSheet, columnNumber, i + players.size(), NAME_PREFIX + name);
 		}
 
 		// Adds the entry "RECHERCHE PARTENAIRE" which is used for double teams
-		if ((listPlayerNames.size() != 0) || (listOverankedPlayerNames.size() != 0))
+		if ((players.size() != 0) || (overankedPlayers.size() != 0))
 		{
 			name = LOOKING_FOR_PARTNER_STRING;
 		}
@@ -306,20 +360,18 @@ public class FormFile
 			name = NO_PLAYER_STRING;
 		}
 
-		POIExcelFileProcessor.createCell(hiddenSheet, columnNumber,
-				listOverankedPlayerNames.size() + listPlayerNames.size(), NAME_PREFIX + name);
+		POIExcelFileProcessor.createCell(hiddenSheet, columnNumber, overankedPlayers.size() + players.size(),
+				NAME_PREFIX + name);
 
 		// Sets the validation for the drop-down lists
 		validationHelper = hiddenSheet.getDataValidationHelper();
-		constraint = validationHelper.createFormulaListConstraint(
-				HIDDEN_SHEET_NAME + "!$" + (char) (columnNumber + 65) + "$1:$" + (char) (columnNumber + 65) + "$"
-						+ (listPlayerNames.size() + listOverankedPlayerNames.size() + 1));
+		constraint = validationHelper.createFormulaListConstraint(HIDDEN_SHEET_NAME + "!$" + (char) (columnNumber + 65)
+				+ "$1:$" + (char) (columnNumber + 65) + "$" + (players.size() + overankedPlayers.size() + 1));
 
 		listConstraints.add(constraint);
 
-		constraint = validationHelper.createFormulaListConstraint(
-				HIDDEN_SHEET_NAME + "!$" + (char) (columnNumber + 65) + "$1:$" + (char) (columnNumber + 65) + "$"
-						+ Math.max(listPlayerNames.size() + listOverankedPlayerNames.size(), 1));
+		constraint = validationHelper.createFormulaListConstraint(HIDDEN_SHEET_NAME + "!$" + (char) (columnNumber + 65)
+				+ "$1:$" + (char) (columnNumber + 65) + "$" + Math.max(players.size() + overankedPlayers.size(), 1));
 
 		listConstraintsShort.add(constraint);
 	}
@@ -329,113 +381,111 @@ public class FormFile
 	 *
 	 * @return list of registrations corresponding to the form file
 	 */
-	public ArrayList<Registration> read()
+	public RegistrationTeam read()
 	{
-		ArrayList<Registration> registrationList = new ArrayList<Registration>();
+		workbook = POIExcelFileProcessor.createWorkbook(file);
 
-		try
+		RegistrationTeam registrationTeam = new RegistrationTeam(schoolName);
+
+		for (int i = 0; i < Category.values().length; i++)
 		{
-			// InputStream inputStream = new FileInputStream(file);
-			workbook = WorkbookFactory.create(file);
+			Sheet sheet = workbook.getSheet(Category.values()[i].text());
 
-			for (int i = 0; i < Category.values().length; i++)
+			ArrayList<Player> listSinglePlayers = new ArrayList<Player>();
+			ArrayList<DoubleTeam> listDoubleTeams = new ArrayList<DoubleTeam>();
+			Row row = null;
+
+			String name = new String();
+			String id = null;
+
+			Category category = Category.values()[i];
+			Player doublePlayer = null;
+
+			Section section = Section.SINGLE;
+
+			// Iterate over the number of rows in the sheet. Start from the second row as the first row is a header
+			for (int j = FIRST_ROW; j < sheet.getLastRowNum(); j++)
 			{
-				Sheet sheet = workbook.getSheet(Category.values()[i].text());
+				row = sheet.getRow(j);
 
-				ArrayList<Player> listSinglePlayers = new ArrayList<Player>();
-				ArrayList<DoubleTeam> listDoubleTeams = new ArrayList<DoubleTeam>();
-				Row row = null;
-
-				String name = new String();
-				Category category = Category.values()[i];
-				Player doublePlayer = null;
-
-				Section section = Section.SINGLE;
-
-				// Iterate over the number of rows in the sheet. Start from the second row as the first row is a header
-				for (int j = FIRST_ROW; j < sheet.getLastRowNum(); j++)
+				// Check if the row is empty
+				if (row != null)
 				{
-					row = sheet.getRow(j);
-
-					// Check if the row is empty
-					if (row != null)
+					// Read specific cells for each row.
+					for (int k = Column.FIRST_NAME.number(); k <= Column.SECOND_NAME.number(); k++)
 					{
-
-						// Read specific cells for each row.
-						for (int k = Column.FIRST_NAME.number(); k <= Column.SECOND_NAME.number(); k++)
+						// Add the content of the cells to the list of single players and double players
+						if (k == Column.FIRST_NAME.number())
 						{
-							// Add the content of the cells to the list of single players and double players
-							if (k == Column.FIRST_NAME.number())
+							if (row.getCell(k).getStringCellValue().equals(SectionHeader.DOUBLE_MASCULINE.headerText())
+									|| row.getCell(k).getStringCellValue()
+											.equals(SectionHeader.DOUBLE_FEMININE.headerText()))
 							{
-								if (row.getCell(k).getStringCellValue()
-										.equals(SectionHeader.DOUBLE_MASCULINE.headerText())
-										|| row.getCell(k).getStringCellValue()
-												.equals(SectionHeader.DOUBLE_FEMININE.headerText()))
-								{
-									section = section.next();
+								section = section.next();
 
-									// Skip row as the row only contains header text
-									k = Column.values().length + 1;
-								}
-								else if (row.getCell(k).getStringCellValue().equals(SectionHeader.NAME.headerText()))
+								// Skip row as the row only contains header text
+								k = Column.values().length + 1;
+							}
+							else if (row.getCell(k).getStringCellValue().equals(SectionHeader.NAME.headerText()))
+							{
+								// Skip row as the row only contains header text
+								k = Column.values().length + 1;
+							}
+							else if (row.getCell(k).getStringCellValue().equals(SectionHeader.EMPTY.headerText()))
+							{
+								// Do nothing
+							}
+							else
+							{
+								name = getName(row.getCell(k).getStringCellValue());
+								id = getID(row.getCell(k).getStringCellValue());
+
+								if (!name.equals("") && !name.equals(NO_PLAYER_STRING))
 								{
-									k = Column.values().length + 1;
-								}
-								else if (row.getCell(k).getStringCellValue().equals(SectionHeader.EMPTY.headerText()))
-								{
-									// Do nothing
+									// Add player to list of single players
+									if (section == Section.SINGLE)
+									{
+										listSinglePlayers
+												.add(new Player(id, name, schoolName, Gender.MASCULIN, category));
+									}
+									// Add player to list of double players
+									else
+									{
+
+										doublePlayer = new Player(id, name, schoolName, section.gender(), category);
+									}
 								}
 								else
 								{
-									name = getName(row.getCell(k));
+									doublePlayer = null;
+								}
+							}
+						}
 
-									if (!name.equals("") && !name.equals(NO_PLAYER_STRING))
+						else if (k == Column.SECOND_NAME.number())
+						{
+							// Check if cell exists in row
+							if (k < row.getLastCellNum())
+							{
+								name = getName(row.getCell(k).getStringCellValue());
+								id = getID(row.getCell(k).getStringCellValue());
+
+								if (!name.equals("") && !name.equals(NO_PLAYER_STRING))
+								{
+									// Add player to list of single players
+									if (section == Section.SINGLE)
 									{
-										// Add player to list of single players
-										if (section == Section.SINGLE)
-										{
-											listSinglePlayers
-													.add(new Player(name, schoolName, Gender.MASCULINE, category));
-										}
-										// Add player to list of double players
-										else
-										{
-
-											doublePlayer = new Player(name, schoolName, section.gender(), category);
-										}
-
+										listSinglePlayers
+												.add(new Player(id, name, schoolName, Gender.FÉMININ, category));
 									}
 									else
 									{
-										doublePlayer = null;
-									}
-								}
-							}
-
-							else if (k == Column.SECOND_NAME.number())
-							{
-								// Check if cell exists in row
-								if (k < row.getLastCellNum())
-								{
-									name = getName(row.getCell(k));
-
-									if (!name.equals("") && !name.equals(NO_PLAYER_STRING))
-									{
-										// Add player to list of single players
-										if (section == Section.SINGLE)
+										// Add players to list of double players
+										if (!(name.equals(LOOKING_FOR_PARTNER_STRING)
+												&& doublePlayer.getName().equals(LOOKING_FOR_PARTNER_STRING)))
 										{
-											listSinglePlayers
-													.add(new Player(name, schoolName, Gender.FEMININE, category));
-										}
-										else
-										{
-											// Add players to list of double players
-											if (!(name.equals(LOOKING_FOR_PARTNER_STRING)
-													&& doublePlayer.getName().equals(LOOKING_FOR_PARTNER_STRING)))
-											{
-												listDoubleTeams.add(new DoubleTeam(doublePlayer,
-														new Player(name, schoolName, section.gender(), category)));
-											}
+											listDoubleTeams.add(new DoubleTeam(doublePlayer,
+													new Player(id, name, schoolName, section.gender(), category)));
 										}
 									}
 								}
@@ -443,18 +493,12 @@ public class FormFile
 						}
 					}
 				}
-
-				registrationList.add(new Registration(listSinglePlayers, listDoubleTeams));
 			}
-		}
-		catch (
 
-		Exception e)
-		{
-			e.printStackTrace();
+			registrationTeam.addRegistration(new Registration(listSinglePlayers, listDoubleTeams, category));
 		}
 
-		return registrationList;
+		return registrationTeam;
 	}
 
 	/**
@@ -537,6 +581,7 @@ public class FormFile
 
 	/**
 	 * Unlocks cells in the section.
+	 * WARNING: Currently unused, possibly irrelevant.
 	 *
 	 * @param sheet
 	 *            sheet that contains the cells to unlocked
@@ -563,10 +608,15 @@ public class FormFile
 
 	/**
 	 * Writes the form file
+	 * WARNING1: Has a bug about the last line of a section having a bigger font than the previous lines.
+	 * WARNING2: Could possibly be enhanced to lock all the contents of the sheets besides the drop-down lists.
+	 *
+	 * @throws SQLException
 	 */
-	public void write()
+	public void write() throws SQLException
 	{
-		workbook = POIExcelFileProcessor.createWorkbook(inputStream);
+		workbook = POIExcelFileProcessor
+				.createWorkbook(FormFileTest.class.getResourceAsStream(FORM_FILE_TEMPLATE_FILENAME));
 		DataValidationHelper validationHelper = null;
 		int[] constraintIndexes = new int[2];
 
@@ -575,28 +625,27 @@ public class FormFile
 		{
 			Sheet sheet = workbook.getSheet(TypeOfResult.values()[i].category().text());
 			validationHelper = sheet.getDataValidationHelper();
-			sheet.protectSheet("Test");
+			// sheet.protectSheet("Test");
 
-			ArrayList<String> listMalePlayerNames = new ArrayList<String>();
-			ArrayList<String> listOverankedMalePlayerNames = new ArrayList<String>();
-			ArrayList<String> listFemalePlayerNames = new ArrayList<String>();
-			ArrayList<String> listOverankedFemalePlayerNames = new ArrayList<String>();
+			ArrayList<Player> malePlayers = new ArrayList<Player>();
+			ArrayList<Player> overankedMalePlayers = new ArrayList<Player>();
+			ArrayList<Player> femalePlayers = new ArrayList<Player>();
+			ArrayList<Player> overankedFemalePlayers = new ArrayList<Player>();
 
-			listMalePlayerNames = PostgreSQLJDBC.getPlayersByFilter(schoolName, Category.values()[i], Gender.MASCULINE);
+			malePlayers = PostgreSQLJDBC.getPlayersByFilter(schoolName, Category.values()[i], Gender.MASCULIN);
 
 			if (Utilities.getPreviousCategory(Category.values()[i]) != null)
 			{
-				listOverankedMalePlayerNames = PostgreSQLJDBC.getPlayersByFilter(schoolName,
-						Utilities.getPreviousCategory(Category.values()[i]), Gender.MASCULINE);
+				overankedMalePlayers = PostgreSQLJDBC.getPlayersByFilter(schoolName,
+						Utilities.getPreviousCategory(Category.values()[i]), Gender.MASCULIN);
 			}
 
-			listFemalePlayerNames = PostgreSQLJDBC.getPlayersByFilter(schoolName, Category.values()[i],
-					Gender.FEMININE);
+			femalePlayers = PostgreSQLJDBC.getPlayersByFilter(schoolName, Category.values()[i], Gender.FÉMININ);
 
 			if (Utilities.getPreviousCategory(Category.values()[i]) != null)
 			{
-				listOverankedFemalePlayerNames = PostgreSQLJDBC.getPlayersByFilter(schoolName,
-						Utilities.getPreviousCategory(Category.values()[i]), Gender.FEMININE);
+				overankedFemalePlayers = PostgreSQLJDBC.getPlayersByFilter(schoolName,
+						Utilities.getPreviousCategory(Category.values()[i]), Gender.FÉMININ);
 			}
 
 			setSchoolName(sheet);
@@ -621,8 +670,8 @@ public class FormFile
 
 				case SINGLE:
 
-					numberRows = Math.max(listMalePlayerNames.size() + listOverankedMalePlayerNames.size(),
-							listFemalePlayerNames.size() + listOverankedFemalePlayerNames.size());
+					numberRows = Math.max(malePlayers.size() + overankedMalePlayers.size(),
+							femalePlayers.size() + overankedFemalePlayers.size());
 
 					constraintIndexes[0] = i * Gender.values().length;
 					constraintIndexes[1] = (i * Gender.values().length) + 1;
@@ -631,7 +680,7 @@ public class FormFile
 
 				case DOUBLE_MASCULINE:
 
-					numberRows = ((listMalePlayerNames.size() + listOverankedMalePlayerNames.size()) / 2) + 1;
+					numberRows = ((malePlayers.size() + overankedMalePlayers.size()) / 2) + 1;
 
 					constraintIndexes[0] = constraintIndexes[1] = i * Gender.values().length;
 
@@ -639,7 +688,7 @@ public class FormFile
 
 				case DOUBLE_FEMININE:
 
-					numberRows = ((listFemalePlayerNames.size() + listOverankedFemalePlayerNames.size()) / 2) + 1;
+					numberRows = ((femalePlayers.size() + overankedFemalePlayers.size()) / 2) + 1;
 
 					constraintIndexes[0] = constraintIndexes[1] = (i * Gender.values().length) + 1;
 
@@ -652,9 +701,6 @@ public class FormFile
 					sheet.shiftRows(firstRow, sheet.getLastRowNum(), numberRows);
 				}
 
-				unlockCells(sheet, firstRow, numberRows);
-				setSectionBorder(sheet, firstRow, numberRows);
-
 				// Add the "ET" text in the middle column for double play
 				if ((Section.values()[j] == Section.DOUBLE_MASCULINE)
 						|| (Section.values()[j] == Section.DOUBLE_FEMININE))
@@ -665,6 +711,8 @@ public class FormFile
 				{
 					setBlackBackground(sheet, firstRow, numberRows);
 				}
+
+				setSectionBorder(sheet, firstRow, numberRows);
 
 				CellRangeAddressList[] addressList = new CellRangeAddressList[2];
 
@@ -678,23 +726,24 @@ public class FormFile
 				{
 					DataValidation validation = null;
 
-					ArrayList<String> listPlayerNames = null;
-					ArrayList<String> listOverankedPlayerNames = null;
+					ArrayList<Player> players = null;
+					ArrayList<Player> overankedPlayers = null;
 
-					if (Gender.values()[k] == Gender.MASCULINE)
+					if (Gender.values()[k] == Gender.MASCULIN)
 					{
-						listPlayerNames = listMalePlayerNames;
-						listOverankedPlayerNames = listOverankedMalePlayerNames;
+						players = malePlayers;
+						overankedPlayers = overankedMalePlayers;
 					}
 					else
 					{
-						listPlayerNames = listFemalePlayerNames;
-						listOverankedPlayerNames = listOverankedFemalePlayerNames;
+						players = femalePlayers;
+						overankedPlayers = overankedFemalePlayers;
 					}
 
+					// Create or populate the hidden sheet only once per sheet
 					if (Section.values()[j] == Section.SINGLE)
 					{
-						populateHiddenSheet(i, k, listPlayerNames, listOverankedPlayerNames);
+						populateHiddenSheet(i, k, players, overankedPlayers);
 						validation = validationHelper.createValidation(listConstraintsShort.get(constraintIndexes[k]),
 								addressList[k]);
 					}
@@ -724,6 +773,6 @@ public class FormFile
 			}
 		}
 
-		POIExcelFileProcessor.writeWorkbook(workbook, outputFile);
+		POIExcelFileProcessor.writeWorkbook(workbook, file);
 	}
 }

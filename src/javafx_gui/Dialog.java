@@ -18,13 +18,13 @@ import utilities.Utilities;
 public class Dialog
 {
 	/**
-	  * Displays an error message dialog when an exception is encountered
-	  *
-	  * @param exception
-	  *            exception thrown by one of the methods
-	  * @param message
-	  *            message to be displayed in the error message dialog
-	  */
+	 * Displays an error message dialog when an exception is encountered
+	 *
+	 * @param exception
+	 *            exception thrown by one of the methods
+	 * @param message
+	 *            message to be displayed in the error message dialog
+	 */
 	public static Alert getExceptionDialog(Exception exception, String message)
 	{
 		Alert alert = new Alert(AlertType.ERROR);
@@ -61,27 +61,17 @@ public class Dialog
 	}
 
 	/**
-	  * Verify if the results file chosen by the user is valid
-	  *
-	  * @param file
-	  *            results file chosen by the user
-	  */
+	 * Verify if the results file chosen by the user is valid
+	 *
+	 * @param file
+	 *            results file chosen by the user
+	 */
 	public static Alert verifyResultsExcelFile(File file)
 	{
 		Alert alert = null;
 
-		// Display a error message that XLSX files cannot be processed
-		if (Utilities.getFileExtension(file).equals("xlsx"))
-		{
-			alert = new Alert(AlertType.ERROR);
-			alert.setTitle("Erreur");
-			alert.setHeaderText("Fichier invalide!");
-			alert.setContentText("Les fichiers Excel de type \".xlsx\" ne peuvent être utilisés! \n"
-					+ "Veuillez sauver le fichier de résultats en format \".xls\" !");
-		}
-
 		// Display a error message that only XLS files are accepted
-		else if (!(Utilities.getFileExtension(file).equals("xls")))
+		if (!(Utilities.getFileExtension(file).equals("xls")) && (Utilities.getFileExtension(file).equals("xlsx")))
 		{
 			alert = new Alert(AlertType.ERROR);
 			alert.setTitle("Erreur");
@@ -109,11 +99,11 @@ public class Dialog
 	}
 
 	/**
-	  * Verify if the standings file chosen by the user is valid
-	  *
-	  * @param file
-	  *            standings file chosen by the user
-	  */
+	 * Verify if the standings file chosen by the user is valid
+	 *
+	 * @param file
+	 *            standings file chosen by the user
+	 */
 	public static Alert verifyStandingsExcelFile(File file)
 	{
 		Alert alert = null;
@@ -121,9 +111,10 @@ public class Dialog
 		try
 		{
 			// Check if the file is not opened
-			if(file.exists() && !(file.length() == 0) && !file.isDirectory())
+			if (file.exists() && !(file.length() == 0) && !file.isDirectory())
 			{
-				Workbook workbook = WorkbookFactory.create(file);;
+				Workbook workbook = WorkbookFactory.create(file);
+				;
 				workbook.close();
 			}
 		}
@@ -135,15 +126,11 @@ public class Dialog
 			alert = new Alert(AlertType.ERROR);
 			alert.setTitle("Erreur");
 			alert.setHeaderText("Fichier ouvert!");
-			alert.setContentText("Le fichier Excel sélectionné est présentment ouvert! Veuiller le fermer avant de procéder");
+			alert.setContentText(
+					"Le fichier Excel sélectionné est présentment ouvert! Veuiller le fermer avant de procéder");
 
 			alert.showAndWait();
 		}
-//		catch (Exception e1)
-//		{
-//			alert = Dialog.getExceptionDialog(e1, "Une erreur est survenue lors de la sauvegarde du fichier de classements.");
-//			alert.showAndWait();
-//		}
 
 		return alert;
 	}

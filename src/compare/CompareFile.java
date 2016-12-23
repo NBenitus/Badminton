@@ -11,6 +11,9 @@ import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 
 import excelHelper.POIExcelFileProcessor;
 
@@ -21,6 +24,8 @@ public class CompareFile
 	private Workbook workbookComparisonFile1;
 	private Workbook workbookComparisonFile2;
 	private Workbook workbookOutputFile;
+
+	private CellStyle redStyle;
 
 	/**
 	 * Constructor.
@@ -40,7 +45,7 @@ public class CompareFile
 		{
 			workbookComparisonFile1 = POIExcelFileProcessor.createWorkbook(new FileInputStream(comparisonFile1));
 			workbookComparisonFile2 = POIExcelFileProcessor.createWorkbook(new FileInputStream(comparisonFile2));
-			workbookOutputFile = POIExcelFileProcessor.createWorkbook(new FileInputStream(outputFile));
+			workbookOutputFile = POIExcelFileProcessor.createWorkbook(new FileInputStream(comparisonFile1));
 		}
 		catch (FileNotFoundException e)
 		{
@@ -52,13 +57,17 @@ public class CompareFile
 	 * Compare each cell in all the sheets
 	 *
 	 */
-	public void compare()
+	public boolean compare()
 	{
+		boolean isEqual = true;
+
 		Sheet sheetComparisonFile1;
 		Sheet sheetComparisonFile2;
 		Sheet sheetOutputFile;
 
-		CellStyle redStyle = workbookOutputFile.createCellStyle();
+		redStyle = workbookOutputFile.createCellStyle();
+		redStyle.setFillForegroundColor(IndexedColors.RED.getIndex());
+		redStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
 		// Iterate over all sheets in the workbook
 		for (int i = 0; i < workbookComparisonFile1.getNumberOfSheets(); i++)
@@ -67,48 +76,18 @@ public class CompareFile
 			sheetComparisonFile2 = workbookComparisonFile2.getSheet(sheetComparisonFile1.getSheetName());
 			sheetOutputFile = workbookOutputFile.getSheet(sheetComparisonFile1.getSheetName());
 
-			// Check that their is a corresponding sheet in the second compared file
-			if (sheetComparisonFile2 != null)
+			if (compareSheet(sheetComparisonFile1, sheetComparisonFile2, sheetOutputFile) == false)
 			{
-				// Iterate over all the rows in the sheet
-				for (int j = 0; j < sheetComparisonFile1.getLastRowNum(); j++)
-				{
-					Row rowComparisonFile1 = sheetComparisonFile1.getRow(j);
-					Row rowComparisonFile2 = sheetComparisonFile2.getRow(j);
-					Row rowOutputFile = sheetOutputFile.getRow(j);
-
-					// Check that the rows are not empty and that the number of columns is the same in both
-					if ((rowComparisonFile1 != null && rowComparisonFile2 != null)
-							&& (rowComparisonFile1.getLastCellNum() == rowComparisonFile2.getLastCellNum()))
-					{
-						for (int k = 0; k < rowComparisonFile1.getLastCellNum(); k++)
-						{
-							Cell cellComparisonFile1 = rowComparisonFile1.getCell(k);
-							Cell cellComparisonFile2 = rowComparisonFile2.getCell(k);
-							Cell cellOutputFile = rowOutputFile.getCell(k);
-
-							// Check that the cells are not empty
-							if (cellComparisonFile1 != null && cellComparisonFile2 != null)
-							{
-								// Assign a green background color if the cells content match
-								if (isCellContentEqual(cellComparisonFile1, cellComparisonFile2) == false)
-								{
-									CellStyle cellOutputFileStyle = cellOutputFile.getCellStyle();
-									redStyle.cloneStyleFrom(cellOutputFileStyle);
-									redStyle.setFillForegroundColor(IndexedColors.RED.getIndex());
-									redStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-									cellOutputFile.setCellStyle(redStyle);
-								}
-							}
-						}
-					}
-				}
+				isEqual = false;
 			}
 		}
 
 		POIExcelFileProcessor.writeWorkbook(workbookOutputFile, outputFile);
 		POIExcelFileProcessor.closeWorkbook(workbookComparisonFile1);
 		POIExcelFileProcessor.closeWorkbook(workbookComparisonFile2);
+		POIExcelFileProcessor.closeWorkbook(workbookOutputFile);
+
+		return isEqual;
 	}
 
 	/**
@@ -119,8 +98,88 @@ public class CompareFile
 	 * @param cell2
 	 *            second cell to be compared
 	 */
-	public boolean isCellContentEqual(Cell cell1, Cell cell2)
+	public boolean compareCell(Cell cellComparisonFile1, Cell cellComparisonFile2, Cell cellOutputFile)
 	{
-		return POIExcelFileProcessor.getCellContents(cell1).equals(POIExcelFileProcessor.getCellContents(cell2));
+		boolean isEqual = true;
+
+		// Check that the cells are not empty
+		if (cellComparisonFile1 != null && cellComparisonFile2 != null)
+		{
+			// Assign a red background color if the cells content do not match
+			if (POIExcelFileProcessor.getCellContents(cellComparisonFile1)
+					.equals(POIExcelFileProcessor.getCellContents(cellComparisonFile2)) == false)
+			{
+				cellOutputFile.setCellStyle(redStyle);
+
+				isEqual = false;
+			}
+		}
+
+		return isEqual;
+	}
+
+	public boolean compareRow(Row rowComparisonFile1, Row rowComparisonFile2, Row rowOutputFile)
+	{
+		boolean isEqual = true;
+		int counter = 0;
+
+		// Check that the rows are not empty and that the number of columns is the same in both
+		if ((rowComparisonFile1 != null && rowComparisonFile2 != null))
+		{
+			if (rowComparisonFile1.getLastCellNum() == rowComparisonFile2.getLastCellNum())
+			{
+				counter = rowComparisonFile1.getLastCellNum();
+			}
+			else
+			{
+				counter = Math.min(rowComparisonFile1.getLastCellNum(), rowComparisonFile2.getLastCellNum());
+			}
+
+			for (int i = 0; i <= counter; i++)
+			{
+				Cell cellComparisonFile1 = rowComparisonFile1.getCell(i);
+				Cell cellComparisonFile2 = rowComparisonFile2.getCell(i);
+				Cell cellOutputFile = rowOutputFile.getCell(i);
+
+				if (compareCell(cellComparisonFile1, cellComparisonFile2, cellOutputFile) == false)
+				{
+					isEqual = false;
+				}
+			}
+
+			if (rowComparisonFile1.getLastCellNum() != rowComparisonFile2.getLastCellNum())
+			{
+				for (int i = 0; i <= Math.max(rowComparisonFile1.getLastCellNum(), rowComparisonFile2.getLastCellNum()) - counter; i++)
+				{
+
+				}
+			}
+		}
+
+		return isEqual;
+	}
+
+	public boolean compareSheet(Sheet sheetComparisonFile1, Sheet sheetComparisonFile2, Sheet sheetOutputFile)
+	{
+		boolean isEqual = true;
+
+		// Check that their is a corresponding sheet in the second compared file
+		if (sheetComparisonFile2 != null)
+		{
+			// Iterate over all the rows in the sheet
+			for (int i = 0; i < sheetComparisonFile1.getLastRowNum(); i++)
+			{
+				Row rowComparisonFile1 = sheetComparisonFile1.getRow(i);
+				Row rowComparisonFile2 = sheetComparisonFile2.getRow(i);
+				Row rowOutputFile = sheetOutputFile.getRow(i);
+
+				if (compareRow(rowComparisonFile1, rowComparisonFile2, rowOutputFile) == false)
+				{
+					isEqual = false;
+				}
+			}
+		}
+
+		return isEqual;
 	}
 }

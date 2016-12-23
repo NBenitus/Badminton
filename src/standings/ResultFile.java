@@ -2,6 +2,7 @@ package standings;
 
 import java.io.File;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -71,9 +72,9 @@ public class ResultFile
 	/**
 	 * Adds results to the database
 	 *
-	 * @throws Exception
+	 * @throws SQLException
 	 */
-	public void addResult()
+	public void addResult() throws SQLException
 	{
 		PostgreSQLJDBC.clearTable("Result");
 		PostgreSQLJDBC.addResult(read());
@@ -114,14 +115,9 @@ public class ResultFile
 					case ID:
 
 						id = POIExcelFileProcessor.getCellContents(row.getCell(j));
-
 						break;
 
 					case PLAYER_NAME:
-
-						// Do nothing
-						break;
-
 					case GENDER:
 
 						// Do nothing
@@ -130,21 +126,18 @@ public class ResultFile
 					case SCHOOL_NAME:
 
 						schoolName = POIExcelFileProcessor.getCellContents(row.getCell(j));
-
 						break;
 
 					case CATEGORY:
 
 						category = Category
 								.valueOf(POIExcelFileProcessor.getCellContents(row.getCell(j)).toUpperCase());
-
 						break;
 
 					case TYPE_OF_PLAY:
 
 						typeOfPlay = TypeOfPlay
 								.valueOf(POIExcelFileProcessor.getCellContents(row.getCell(j)).toUpperCase());
-
 						break;
 
 					case FIRST_TOURNAMENT:
@@ -178,8 +171,10 @@ public class ResultFile
 
 	/**
 	 * Writes the pre-filled columns to the results file
+	 *
+	 * @throws SQLException
 	 */
-	public void write()
+	public void write() throws SQLException
 	{
 		ArrayList<Player> listPlayers = PostgreSQLJDBC.getAllPlayers();
 
